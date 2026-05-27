@@ -43,6 +43,8 @@ When the root list is already selected, the next press returns to the content sc
 
 Extend `SelectAllContent` so it treats an already selected root list as a handled state instead of returning `false`.
 
+Because a root-list selection only stores the root start and root end positions, it cannot identify the item that started the cycle by itself. `CtrlAAndCmdABehaviourOverride` should keep a small in-memory cycle cursor and pass it into `SelectAllContent` on the next invocation. The operation should expose the next cycle cursor after a handled step so the feature can keep the cycle anchored to the same item.
+
 The operation should:
 
 - Continue to require a single selection.
@@ -50,10 +52,11 @@ The operation should:
 - Detect the current selection scope by comparing normalized selection endpoints with known content, subtree, and root list ranges.
 - Keep `stopPropagation` and `updated` set to `true` for every successful cycle step, including root-list-to-content.
 - Preserve existing behavior for partial selections by expanding them to the content scope.
+- Use the feature-provided cycle cursor only when the current selection already covers the root list.
 
 The implementation should stay within the existing operation and feature boundary:
 
-- `CtrlAAndCmdABehaviourOverride` remains responsible for key binding and command registration.
+- `CtrlAAndCmdABehaviourOverride` remains responsible for key binding, command registration, and remembering the last handled cycle cursor.
 - `SelectAllContent` remains responsible for deciding and applying the next selection scope.
 - Parser and root/list model changes should be avoided unless the existing APIs cannot identify the required ranges.
 
@@ -72,4 +75,3 @@ Run the relevant unit tests after implementation:
 ```sh
 npm test -- --runTestsByPath src/operations/__tests__/SelectAllContent.test.ts
 ```
-
