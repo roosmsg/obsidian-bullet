@@ -354,10 +354,7 @@ test("should keep select-all cycle anchored across separate keypresses", () => {
   expect((feature as any).run(editor).shouldStopPropagation).toBe(true);
   expect(root.getSelection().anchor).toEqual({ line: 1, ch: 2 });
   expect(root.getSelection().head).toEqual({ line: 1, ch: 8 });
-  expect(operationPerformer.perform.mock.calls[3][2]).toEqual({
-    line: 1,
-    ch: 2,
-  });
+  expect(operationPerformer.perform.mock.calls[3][2]).toBeUndefined();
 });
 ```
 
@@ -403,7 +400,6 @@ Replace the existing `private run = (editor: MyEditor) => { ... }` method with:
         return operation;
       },
       editor,
-      this.cycleCursor ?? editor.getCursor(),
     );
 
     this.cycleCursor = operation?.getCycleCursor() ?? null;
