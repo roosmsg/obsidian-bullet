@@ -22,6 +22,7 @@
 - Build with `npm run build-with-tests` before running the full Jest suite because Markdown integration specs execute `dist/main.js`.
 - Use English Conventional Commits with detailed `Why` and `What` sections.
 - Do not release or change the package version unless the user separately requests a release.
+- Use the repository's `/Users/kodai/workspaces/github.com/kdnk/obsidian-bullet/vault` for manual Obsidian verification; never copy test artifacts or notes into `/Users/kodai/base`.
 
 ---
 
@@ -30,7 +31,7 @@
 - Modify: `src/features/VerticalLines.ts` — implement direct-child batch folding and unfolding.
 - Modify: `src/features/__tests__/VerticalLines.test.ts` — restore the legacy helper contract and handler-level regression coverage.
 - Modify: `docs/superpowers/plans/2026-07-13-restore-vertical-guide-folding.md` — record completed steps and final verification evidence.
-- Temporary manual-test fixture: `/Users/kodai/base/vertical-guide-regression-test.md` — exercise the built plugin in Obsidian, then remove it after verification.
+- Temporary manual-test fixture: `vault/vertical-guide-regression-test.md` — exercise the built plugin in the repository's test vault, then remove it after verification.
 
 ### Task 1: Restore the Direct-Child Batch Contract
 
@@ -191,8 +192,8 @@ Expected: the commit succeeds and its hooks pass.
 ### Task 2: Complete Automated and Obsidian Verification
 
 **Files:**
-- Create temporarily: `/Users/kodai/base/vertical-guide-regression-test.md`
-- Delete after verification: `/Users/kodai/base/vertical-guide-regression-test.md`
+- Create temporarily: `vault/vertical-guide-regression-test.md`
+- Delete after verification: `vault/vertical-guide-regression-test.md`
 
 **Interfaces:**
 - Consumes: production `dist/main.js`, `manifest.json`, and `styles.css`.
@@ -228,20 +229,20 @@ npm run build
 
 Expected: Rollup completes successfully and replaces `dist/main.js` with the production bundle.
 
-- [ ] **Step 4: Install the production artifacts into the local Obsidian vault**
+- [ ] **Step 4: Install the production artifacts into the repository test vault**
 
 Run:
 
 ```bash
-cp dist/main.js manifest.json styles.css /Users/kodai/base/.obsidian/plugins/bullet/
-shasum -a 256 dist/main.js manifest.json styles.css /Users/kodai/base/.obsidian/plugins/bullet/main.js /Users/kodai/base/.obsidian/plugins/bullet/manifest.json /Users/kodai/base/.obsidian/plugins/bullet/styles.css
+cp dist/main.js manifest.json styles.css vault/.obsidian/plugins/bullet/
+shasum -a 256 dist/main.js manifest.json styles.css vault/.obsidian/plugins/bullet/main.js vault/.obsidian/plugins/bullet/manifest.json vault/.obsidian/plugins/bullet/styles.css
 ```
 
 Expected: each repository artifact has the same SHA-256 hash as its installed counterpart.
 
 - [ ] **Step 5: Create an isolated manual-test note**
 
-Use `apply_patch` to create `/Users/kodai/base/vertical-guide-regression-test.md` with exactly:
+Use `apply_patch` to create `vault/vertical-guide-regression-test.md` with exactly:
 
 ```md
 - parent
@@ -297,7 +298,7 @@ Expected: every check passes, including the inside-selection case that previousl
 
 - [ ] **Step 7: Remove the isolated manual-test note**
 
-Use `apply_patch` to delete `/Users/kodai/base/vertical-guide-regression-test.md` after the Obsidian checks pass.
+Use `apply_patch` to delete `vault/vertical-guide-regression-test.md` after the Obsidian checks pass.
 
 - [ ] **Step 8: Confirm the repository is clean except for the plan record**
 
