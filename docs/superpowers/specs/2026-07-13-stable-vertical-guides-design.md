@@ -41,7 +41,7 @@ Obsidian already renders `.cm-indent` elements inside each visible CodeMirror li
 The feature will contain two responsibilities:
 
 1. `DocumentBodyClass` continues to apply `bullet-plugin-vertical-lines` to every participating document when the feature is enabled.
-2. A small CodeMirror view plugin handles `mousedown` events on `.cm-indent` elements when click-to-fold is enabled.
+2. A small CodeMirror view plugin observes `mousedown` on `contentDOM` during the capture phase and handles `.cm-indent` elements when click-to-fold is enabled. Obsidian stops these events before CodeMirror's normal bubbling view-plugin handlers, so capture is required. The listener is removed when the view plugin is destroyed.
 
 There will be no plugin-owned guide elements, overlay scroller, layout observer, animation-frame scheduler, coordinate cache, or geometry helper.
 
@@ -51,17 +51,15 @@ When a `.cm-indent` element is pressed:
 
 1. Resolve the containing `.cm-line` and its document position with `EditorView.posAtDOM`.
 2. Parse the list block containing that line and find the list item that owns the line, including note lines.
-3. Build its ancestor chain from outermost ancestor to immediate parent, excluding the parser's synthetic root.
-4. Collect the line's `.cm-indent` elements in DOM order.
-5. Align the ancestor chain to the rightmost indent elements. Any leading indent elements represent shared block indentation and do not map to a foldable ancestor.
-6. Use the pressed indent element's aligned index to select the target ancestor.
-7. Toggle the target's direct non-empty children using the existing `MyEditor.fold` and `MyEditor.unfold` operations.
+3. Treat the native `.cm-indent` as the guide for the owning list item's immediate parent. Obsidian renders the complete indentation text inside one `.cm-indent`; it does not create one element per nesting level.
+4. Select the immediate parent unless it is the parser's synthetic root.
+5. Toggle that parent list itself using the existing `MyEditor.fold` and `MyEditor.unfold` operations.
 
 The handler does nothing when the feature is disabled, the configured action is `none`, the target is not an indentation guide, parsing fails, the indent belongs only to shared leading indentation, or the target ancestor has no children.
 
 ## Styling
 
-The plugin will stop suppressing Obsidian's `.cm-indent::before` guide. While the feature is enabled it will add pointer and hover affordances to `.cm-indent` without changing its layout. When click-to-fold is disabled, guides remain non-interactive.
+The plugin will stop suppressing Obsidian's `.cm-indent::before` guide. While the feature is enabled it will add a pointer affordance to `.cm-indent` without changing its layout. The event handler remains inactive when click-to-fold is disabled.
 
 The old `.bullet-plugin-list-lines-scroller`, `.bullet-plugin-list-lines-content-container`, and `.bullet-plugin-list-line` styles will be removed.
 
@@ -70,12 +68,13 @@ The old `.bullet-plugin-list-lines-scroller`, `.bullet-plugin-list-lines-content
 Tests will focus on behavior rather than mocked geometry:
 
 - Map a direct-child guide to its parent.
-- Map each guide on a deeply nested line to the corresponding ancestor.
-- Ignore leading indentation that does not represent an ancestor.
+- Map a deeply nested line's native guide to its immediate ancestor.
+- Ignore leading indentation on a root list item because it has no real ancestor.
 - Resolve note lines to their owning list item.
-- Toggle all direct non-empty children between folded and unfolded states.
+- Toggle the represented parent list itself between folded and unfolded states.
 - Ignore events when either relevant setting is disabled.
 - Ignore non-guide targets and unparseable lines.
+- Register the capture listener once and remove the same listener on destroy.
 - Preserve body classes across pop-out documents.
 - Assert that the production implementation contains no overlay, observer, scheduler, or guide-coordinate cache.
 
