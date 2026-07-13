@@ -46,7 +46,7 @@
 - Produces: `resolveVerticalGuideTarget(list: List, pressedGuide: Element): List | null`.
 - Preserves: `toggleVerticalGuideTarget(editor, list): boolean` and its direct-child batch behavior.
 
-- [ ] **Step 1: Add realistic guide-boundary test helpers**
+- [x] **Step 1: Add realistic guide-boundary test helpers**
 
 Move the handler-local guide factory to the shared helper section after `makeFoldEditor`, and replace it with:
 
@@ -86,7 +86,7 @@ function resolveGuideTarget(
 
 Delete the old `makeGuideLine(guideCount = 1)` inside `describe("VerticalLinesPluginValue.handleMouseDown")`.
 
-- [ ] **Step 2: Replace outermost-only resolver tests with boundary-specific expectations**
+- [x] **Step 2: Replace outermost-only resolver tests with boundary-specific expectations**
 
 Replace `describe("resolveVerticalGuideTarget")` with tests equivalent to:
 
@@ -184,7 +184,7 @@ describe("resolveVerticalGuideTarget", () => {
 });
 ```
 
-- [ ] **Step 3: Add a handler regression for an inner child guide**
+- [x] **Step 3: Add a handler regression for an inner child guide**
 
 Keep the existing outer-guide handler test and replace its factory call with `makeGuideLine(["    "])`. Then add:
 
@@ -240,7 +240,7 @@ test("folds only the child branch represented by an inner guide", () => {
 });
 ```
 
-- [ ] **Step 4: Run the focused test and verify RED**
+- [x] **Step 4: Run the focused test and verify RED**
 
 Run:
 
@@ -250,7 +250,7 @@ SKIP_OBSIDIAN=1 npx jest --forceExit --runInBand src/features/__tests__/Vertical
 
 Expected: FAIL for the inner-guide, combined-boundary, leading-indentation, and handler regressions. The current resolver returns the outermost parent for every pressed guide, so the handler folds lines `1` and `6` instead of lines `2` and `4`.
 
-- [ ] **Step 5: Implement exact boundary-prefix resolution**
+- [x] **Step 5: Implement exact boundary-prefix resolution**
 
 Add the indent-container selector and replace `resolveVerticalGuideTarget` with:
 
@@ -303,7 +303,7 @@ const target = resolveVerticalGuideTarget(list, pressedGuide);
 
 Do not change `toggleVerticalGuideTarget`, persistent-guide synchronization, CSS, listener phase, or editor folding methods.
 
-- [ ] **Step 6: Run focused GREEN tests and static checks**
+- [x] **Step 6: Run focused GREEN tests and static checks**
 
 Run:
 
@@ -316,7 +316,7 @@ git diff --check
 
 Expected: both focused suites pass; Prettier, ESLint, TypeScript, and diff checks exit with status `0`.
 
-- [ ] **Step 7: Commit the behavior correction**
+- [x] **Step 7: Commit the behavior correction**
 
 Run:
 
@@ -348,7 +348,7 @@ Expected: the commit succeeds and the lint hook passes.
 - Consumes: accepted design `docs/superpowers/specs/2026-07-13-nested-native-guide-targeting-design.md`.
 - Produces: unambiguous future-agent rules consistent with the corrected implementation.
 
-- [ ] **Step 1: Replace the incorrect outermost-only `AGENTS.md` rule**
+- [x] **Step 1: Replace the incorrect outermost-only `AGENTS.md` rule**
 
 Replace the bullet beginning `深い行にある 1 個の .cm-indent` with:
 
@@ -358,7 +358,7 @@ Replace the bullet beginning `深い行にある 1 個の .cm-indent` with:
 
 Keep the existing direct-child batch, persistent-guide, layout, z-index, capture, selection-safe, and no-overlay bullets unchanged.
 
-- [ ] **Step 2: Mark historical mapping documents as superseded**
+- [x] **Step 2: Mark historical mapping documents as superseded**
 
 Immediately after the H1 in `docs/superpowers/specs/2026-07-13-restore-vertical-guide-folding-design.md`, add:
 
@@ -384,7 +384,7 @@ Replace the existing mapping notice in `docs/superpowers/plans/2026-07-13-stable
 > **Superseded nested targeting:** Immediate-parent and outermost-only mappings are historical. Each pressed native guide now resolves by its exact indentation boundary as specified in [`2026-07-13-nested-native-guide-targeting-design.md`](../specs/2026-07-13-nested-native-guide-targeting-design.md).
 ```
 
-- [ ] **Step 3: Validate the guidance diff**
+- [x] **Step 3: Validate the guidance diff**
 
 Run:
 
@@ -397,7 +397,7 @@ git diff -- AGENTS.md docs/superpowers/specs docs/superpowers/plans
 
 Expected: the accepted design is the active mapping source; historical claims are explicitly labeled; no unrelated instructions change; diff check passes.
 
-- [ ] **Step 4: Commit the durable guidance correction**
+- [x] **Step 4: Commit the durable guidance correction**
 
 Run:
 
@@ -429,7 +429,7 @@ Expected: the commit succeeds and the lint hook passes.
 - Consumes: production `dist/main.js`, `manifest.json`, and `styles.css` from the verified source commit.
 - Produces: automated and guarded Obsidian 1.13.1 evidence for exact outer/inner target separation.
 
-- [ ] **Step 1: Build the test-enabled bundle and run the complete suite**
+- [x] **Step 1: Build the test-enabled bundle and run the complete suite**
 
 Run:
 
@@ -440,7 +440,7 @@ npm test -- --runInBand
 
 Expected: Rollup succeeds; every Jest suite and test passes. The repository's existing `--forceExit` advisory may appear, but no suite or test may fail.
 
-- [ ] **Step 2: Build and install production artifacts into the repository test vault**
+- [x] **Step 2: Build and install production artifacts into the repository test vault**
 
 Run:
 
@@ -456,7 +456,7 @@ shasum -a 256 \
 
 Expected: the production build succeeds and each source artifact hash matches its installed test-vault counterpart.
 
-- [ ] **Step 3: Create the isolated nested-guide fixture**
+- [x] **Step 3: Create the isolated nested-guide fixture**
 
 Use `apply_patch` to create `vault/vertical-guide-level-regression-test.md` with:
 
@@ -491,7 +491,7 @@ Use `apply_patch` to create `vault/vertical-guide-level-regression-test.md` with
 - scroll filler 20
 ```
 
-- [ ] **Step 4: Open and reload only the test vault**
+- [x] **Step 4: Open and reload only the test vault**
 
 Run:
 
@@ -502,7 +502,7 @@ Run:
 
 Expected: the note opens in the repository test vault and the installed `bullet` plugin reloads there.
 
-- [ ] **Step 5: Verify the outer guide**
+- [x] **Step 5: Verify the outer guide**
 
 Before every Computer Use action, run:
 
@@ -516,7 +516,7 @@ Click the outer guide on a deeply nested visible row. Confirm `child` and `outer
 
 Expected: the outer guide still batch-toggles only `parent`'s direct non-empty children.
 
-- [ ] **Step 6: Verify the inner child guide and selection safety**
+- [x] **Step 6: Verify the inner child guide and selection safety**
 
 Place the cursor inside `leaf alpha`, refresh the title guard, and click the inner guide whose raw boundary prefix is four spaces.
 
@@ -530,13 +530,13 @@ Confirm:
 
 Expected: the inner guide toggles only `child`'s direct branches and does not close the outer parent's sibling branch.
 
-- [ ] **Step 7: Verify scroll attachment and no overlay**
+- [x] **Step 7: Verify scroll attachment and no overlay**
 
 With a fresh title guard before each action, scroll down into the filler rows and back up. Confirm native guides remain attached to their CodeMirror rows and that no `.bullet-plugin-list-lines-scroller`, `.bullet-plugin-list-lines-content-container`, or `.bullet-plugin-list-line` exists.
 
 Expected: no drift or overlay is present.
 
-- [ ] **Step 8: Remove temporary metadata and fixture**
+- [x] **Step 8: Remove temporary metadata and fixture**
 
 Remove any temporary `aria-label`, `role`, and `tabindex` from instrumented guides. Use `apply_patch` to delete `vault/vertical-guide-level-regression-test.md`, then run:
 
@@ -557,7 +557,7 @@ Expected: the temporary fixture is absent; only this plan's execution-record edi
 - Consumes: Task 1 implementation commits, Task 2 guidance commit, and Task 3 verification evidence.
 - Produces: a reviewed execution record and an updated `origin/main` without a pull request or release.
 
-- [ ] **Step 1: Review the complete implementation range**
+- [x] **Step 1: Review the complete implementation range**
 
 Review from the design commit `b9d6eb9` through the final implementation/guidance commit. Confirm exact guide-level targeting, failure-safe unmatched handling, unchanged persistent-guide lifecycle, unchanged direct-child batch semantics, no overlay, focused regression coverage, and test-vault isolation.
 
@@ -574,7 +574,7 @@ git diff --check b9d6eb9..HEAD
 
 Expected: no blocking, important, or minor findings; focused checks pass.
 
-- [ ] **Step 2: Record exact verification results**
+- [x] **Step 2: Record exact verification results**
 
 Mark every completed checkbox in this plan as `[x]` and append a `## Verification Results` section containing the observed focused-test count, complete-suite count, build results, installed artifact hashes, outer-guide result, inner-guide isolation result, cursor-safety result, scroll/no-overlay result, fixture cleanup, and final review verdict.
 
@@ -624,3 +624,18 @@ node -p "require('./package.json').version"
 ```
 
 Expected: the worktree is clean; `HEAD`, `main`, and `origin/main` match; version remains `5.6.2`; no new release tag exists at the implementation HEAD.
+
+## Verification Results
+
+- Focused Task 4 verification: **PASS** — `src/features/__tests__/VerticalLines.test.ts` and `src/editor/__tests__/index.test.ts` completed with 2/2 suites and 28/28 tests passing; lint, TypeScript, and `git diff --check b9d6eb9..HEAD` also exited `0`.
+- Complete Task 3 Jest suite: **PASS** — 55/55 suites passed; 330 tests passed, 14 skipped, 344 total.
+- Builds: **PASS** — `npm run build-with-tests` and the production `npm run build` both completed successfully.
+- Installed production artifact hashes: **MATCH** — `dist/main.js` and `vault/.obsidian/plugins/bullet/main.js` were both `616e87e75308fa90cd2a9e07fb87d619b1429cfc5b45272cd7bf7198be03e200`; `manifest.json` and `vault/.obsidian/plugins/bullet/manifest.json` were both `38e125941d6cd00f5477aeafbf9505939ead1b2cf787e77aaf40a25abf7ed336`; `styles.css` and `vault/.obsidian/plugins/bullet/styles.css` were both `22f43dbed2a57ccbc9d9ba69e08a6660cc759c2c9414d84ac7a76abcd3c83cfe`.
+- Outer guide: **PASS** — folding kept the represented parent and direct roots visible, folded only the direct non-empty child branches, and the persistent native guide reopened every branch.
+- Inner four-space boundary: **PASS** — only `child`'s direct branches were targeted; `outer sibling` and `outer leaf` remained visible and unchanged, and the inner guide reopened both child branches.
+- Cursor safety: **PASS** — the cursor moved atomically from line 3, ch 14 inside `leaf alpha` to line 2, ch 10 on `branch alpha`, and the child folds remained closed.
+- Scroll attachment and no overlay: **PASS** — the final actual-window-guarded Computer Use `Page_Down` / `Page_Up` pair moved `scrollTop` `0` → `321` → `0`; the native guide/row top and left deltas remained `1.1875` / `0`, overlay count remained `0`, and every final guard had the exact title `vertical-guide-level-regression-test - vault - Obsidian 1.13.1`.
+- Safety-stop history: the initial run and intermediate retry both stopped when a fresh Computer Use title showed `base`; no scroll or other unsafe content action was performed against that window. The user separately authorized the one-time vault-independent `obsidian-cli --help` diagnostic, which did not target, read, or modify any vault; the Task 3 rereview then approved the completed evidence.
+- Cleanup: **PASS** — temporary guide metadata had zero remaining markers, the fixture was deleted, debugger cleanup completed, artifact hashes still matched, and the tracked worktree was clean before this execution-record edit.
+- Final review: **APPROVED** after `ec783d9` — exact guide-level targeting, failure-safe unmatched handling, persistent-guide lifecycle, direct-child batch semantics, no-overlay architecture, focused regression coverage, and test-vault isolation have no Critical, Important, or Minor findings. The verdict explicitly recommended recording this evidence and pushing `main`.
+- Version and release: package version remains `5.6.2`; no package-version, release, tag, or pull-request action was performed after the `5.6.2` baseline.
