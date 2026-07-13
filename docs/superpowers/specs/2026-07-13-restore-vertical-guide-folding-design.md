@@ -1,0 +1,84 @@
+# Restore Vertical Guide Folding Design
+
+## Problem
+
+The native-guide refactor changed the meaning of a vertical-guide click. The legacy overlay kept the represented parent and its direct items visible while folding or unfolding the descendant branches rooted at the parent's direct non-empty children. The native implementation instead folds the represented parent itself.
+
+The later selection-safety fix made that new behavior stable, but it did not restore the legacy folding contract. As a result, clicking a guide hides a different set of list items than it did before the native-guide refactor.
+
+## Goals
+
+- Restore the legacy click behavior for the parent represented by a native guide.
+- Keep the represented parent and its direct leaves visible.
+- Fold all direct child branches when any direct child branch is open.
+- Unfold all direct child branches when every direct child branch is folded.
+- Keep folds closed when the selection starts inside a branch being folded.
+- Retain CodeMirror-owned native guide rendering and capture-phase event handling.
+
+## Non-goals
+
+- Reintroduce the plugin-owned guide overlay, coordinate cache, or scroll synchronization.
+- Change native guide-to-parent mapping.
+- Change folding commands outside vertical-guide interaction.
+- Add delayed refolding or event-order workarounds.
+
+## Approaches Considered
+
+### Restore the legacy calls literally
+
+The old implementation called `fold` for each direct non-empty child. This restores which items remain visible, but it also allows CodeMirror to reopen a branch when the selection remains inside its folded range.
+
+### Restore legacy semantics with selection-safe child folds
+
+Select the direct non-empty children exactly as the old implementation did, while using `foldEnsuringCursorVisible` for each child. This restores the user-visible folding contract and retains the fix for CodeMirror's selection invariant.
+
+This is the chosen approach.
+
+### Restore the overlay implementation
+
+The old overlay provides independent per-depth guide elements, but it also restores the second scrolling and geometry system that drifted during CodeMirror virtualization. The requested folding behavior does not require that rendering architecture.
+
+## Chosen Behavior
+
+After resolving the parent represented by the pressed native guide:
+
+1. Collect the parent's direct children whose `isEmpty()` value is false. These are the branch roots that can hide descendants.
+2. If there are no such children, do nothing and allow the normal mouse interaction to continue.
+3. If every collected child is folded, unfold every collected child.
+4. Otherwise, fold every collected child with `foldEnsuringCursorVisible`, using that child's first-line content start as its fallback cursor.
+5. Report the guide press as handled only after the batch action is selected.
+
+The parent itself is never passed to `fold`, `foldEnsuringCursorVisible`, or `unfold`. Direct leaves are never passed to those methods, so they remain visible in both states.
+
+## Selection Safety
+
+Each child fold uses its own fold range and fallback cursor. If the current selection head is inside that range, `MyEditor` moves the selection to the child root and applies the `foldEffect` in the same transaction. Selections outside the range are preserved.
+
+Sequential child operations are safe because only one branch can contain the main selection. Once that branch is folded, the selection remains on its visible branch root while the remaining sibling branches are folded.
+
+## Unchanged Architecture
+
+- `.cm-indent::before` remains the only guide-rendering source.
+- `contentDOM` continues to observe `mousedown` in the capture phase.
+- The pressed line is parsed and mapped to its immediate real list parent.
+- The handler continues to ignore disabled settings, non-guide targets, unavailable editor state, parse failures, and synthetic-root targets.
+- No overlay DOM, layout observer, animation-frame scheduler, or coordinate cache is added.
+
+## Testing
+
+Unit tests will verify that:
+
+- Any open direct child causes all direct non-empty children to receive selection-safe folds.
+- Every folded direct child causes all direct non-empty children to unfold.
+- Each child fold receives that child's own line and content-start fallback cursor.
+- The represented parent is never folded or unfolded.
+- Direct leaves remain untouched.
+- A parent with no direct non-empty children is a no-op.
+- The capture-phase handler invokes the restored batch behavior.
+- Existing editor tests continue to prove atomic selection relocation and folding.
+
+After focused tests pass, verification will run lint, `build-with-tests`, the complete test suite, and the production build. The built plugin will then be checked in Obsidian 1.13.1 with the cursor both inside and outside a branch, mixed folded children, fully folded children, direct leaves, and a long list during scrolling.
+
+## Documentation Corrections
+
+The stable native-guide design and agent guidance must state the legacy batch-child contract. The earlier selection design remains valid at the `MyEditor` boundary but must describe child-branch folds instead of folding the represented parent itself.

@@ -53,7 +53,8 @@ When a `.cm-indent` element is pressed:
 2. Parse the list block containing that line and find the list item that owns the line, including note lines.
 3. Treat the native `.cm-indent` as the guide for the owning list item's immediate parent. Obsidian renders the complete indentation text inside one `.cm-indent`; it does not create one element per nesting level.
 4. Select the immediate parent unless it is the parser's synthetic root.
-5. Toggle that parent list itself using the existing `MyEditor.fold` and `MyEditor.unfold` operations.
+5. Toggle the parent's direct non-empty children while keeping the parent and its direct leaves visible.
+6. If every non-empty child is folded, unfold every child. Otherwise, fold every child with a selection-safe fold operation.
 
 The handler does nothing when the feature is disabled, the configured action is `none`, the target is not an indentation guide, parsing fails, the indent belongs only to shared leading indentation, or the target ancestor has no children.
 
@@ -71,7 +72,7 @@ Tests will focus on behavior rather than mocked geometry:
 - Map a deeply nested line's native guide to its immediate ancestor.
 - Ignore leading indentation on a root list item because it has no real ancestor.
 - Resolve note lines to their owning list item.
-- Toggle the represented parent list itself between folded and unfolded states.
+- Toggle the represented parent's direct non-empty children between folded and unfolded states without folding the parent itself.
 - Ignore events when either relevant setting is disabled.
 - Ignore non-guide targets and unparseable lines.
 - Register the capture listener once and remove the same listener on destroy.

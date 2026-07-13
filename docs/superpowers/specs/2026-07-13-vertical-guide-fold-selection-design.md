@@ -2,14 +2,15 @@
 
 ## Problem
 
-In Obsidian 1.13.1, clicking a native `.cm-indent` guide can fold its represented parent for a moment and then immediately unfold it. The behavior is reproducible when the editor selection is inside the subtree being folded.
+In Obsidian 1.13.1, clicking a native `.cm-indent` guide can fold one of the represented parent's direct child branches for a moment and then immediately unfold it. The behavior is reproducible when the editor selection is inside that child branch.
 
-`VerticalLines` currently dispatches only a CodeMirror `foldEffect`. That transaction can temporarily create a folded range even when the existing selection is inside it. A following selection transaction from the mouse interaction still points into the hidden subtree. CodeMirror's fold state intentionally removes any folded range that covers the new selection head, so the list reopens.
+`VerticalLines` dispatches a CodeMirror `foldEffect` for each direct non-empty child. A transaction can temporarily create a folded range even when the existing selection is inside it. A following selection transaction from the mouse interaction still points into the hidden subtree. CodeMirror's fold state intentionally removes any folded range that covers the new selection head, so the branch reopens.
 
 ## Goals
 
-- Keep a list folded after its vertical guide is clicked.
+- Keep each direct child branch folded after its vertical guide is clicked.
 - Preserve the existing guide-to-parent mapping and unfold behavior.
+- Preserve the legacy behavior that leaves the represented parent and its direct leaves visible.
 - Move the cursor only when folding would hide it.
 - Keep the cursor relocation and fold effect atomic.
 - Add a regression test for folding while the cursor is inside the target subtree.
@@ -25,7 +26,7 @@ In Obsidian 1.13.1, clicking a native `.cm-indent` guide can fold its represente
 
 ### Atomic cursor relocation and fold
 
-Dispatch a cursor selection on the represented parent and its `foldEffect` in one CodeMirror transaction when the current selection head is inside the fold range. This directly satisfies CodeMirror's invariant that the selection remain visible and creates no intermediate editor state.
+Dispatch a cursor selection on the child branch root and its `foldEffect` in one CodeMirror transaction when the current selection head is inside the fold range. This directly satisfies CodeMirror's invariant that the selection remain visible and creates no intermediate editor state.
 
 This is the chosen approach.
 
@@ -45,7 +46,7 @@ Add `MyEditor.foldEnsuringCursorVisible(line, fallbackCursor)`. The method will 
 - If the selection head is outside the range, dispatch only the `foldEffect` and preserve the selection.
 - If no foldable range exists, do nothing.
 
-`VerticalLines.toggleVerticalGuideTarget` will call the new method when folding and use the represented parent's first-line content start as `fallbackCursor`. Unfolding will continue to call `unfold` unchanged.
+`VerticalLines.toggleVerticalGuideTarget` will select the represented parent's direct non-empty children. When any child is open, it will call the new method for every child and use that child's first-line content start as `fallbackCursor`. When every child is folded, it will call `unfold` for every child.
 
 The existing capture-phase `mousedown` listener, event cancellation, guide resolution, parser behavior, and settings checks remain unchanged.
 
@@ -53,20 +54,21 @@ The existing capture-phase `mousedown` listener, event cancellation, guide resol
 
 1. The capture listener receives `mousedown` on `.cm-indent`.
 2. `VerticalLines` resolves the containing document line and represented parent list.
-3. For an open parent, it passes the parent's line and first-line content start to `foldEnsuringCursorVisible`.
-4. `MyEditor` resolves the CodeMirror fold range and checks whether the current selection would be hidden.
-5. CodeMirror receives one fold transaction, with a safe selection included only when necessary.
-6. The fold state remains valid because no selection head is inside the folded range.
+3. If every direct non-empty child is folded, it unfolds every child and stops.
+4. Otherwise, it passes each child's line and first-line content start to `foldEnsuringCursorVisible`.
+5. `MyEditor` resolves each CodeMirror fold range and checks whether the current selection would be hidden.
+6. CodeMirror receives one fold transaction per child, with a safe selection included only when necessary.
+7. The fold state remains valid because no selection head is inside a folded range.
 
 ## Error Handling
 
-The behavior remains a no-op when editor state, parsing, the represented parent, or a foldable range is unavailable. No retry or asynchronous fallback is introduced.
+The behavior remains a no-op when editor state, parsing, the represented parent, or a foldable range is unavailable. A target with no direct non-empty children also remains a no-op. No retry or asynchronous fallback is introduced.
 
 ## Testing
 
 - Add an editor unit test proving that an inside selection and fold effect are dispatched atomically with the fallback cursor.
 - Add an editor unit test proving that an outside selection is preserved while folding.
-- Update vertical-guide tests to assert that folding uses the represented parent's first-line content start as the fallback cursor.
-- Keep existing tests for unfolding, empty targets, disabled settings, event capture cleanup, and guide mapping.
+- Update vertical-guide tests to assert that each direct non-empty child is folded with its own first-line content start as the fallback cursor.
+- Keep tests for unfolding all children, empty targets, disabled settings, event capture cleanup, and guide mapping.
 - Run the focused unit tests, complete unit suite, lint, `build-with-tests`, and full integration suite before completion.
 - Recheck the interaction in Obsidian 1.13.1 after building the plugin.
