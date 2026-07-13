@@ -1,5 +1,8 @@
 # Vertical Guide Hover Feedback Implementation Plan
 
+> [!WARNING]
+> **Superseded:** Do not implement this row-local hover plan. Use the accepted [Logical Vertical Guide Hover Feedback Implementation Plan](./2026-07-14-logical-vertical-guide-hover-feedback.md), which highlights the complete logical guide.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make each actionable native vertical-guide segment adopt Obsidian's active guide style while hovered, without advertising an unavailable folding action.
