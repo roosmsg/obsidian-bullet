@@ -285,7 +285,14 @@ Use `apply_patch` to create `vault/vertical-guide-regression-test.md` with exact
 
 - [ ] **Step 6: Verify the interaction in Obsidian 1.13.1**
 
-Reload the `bullet` plugin, open `vertical-guide-regression-test.md` in Live Preview, and verify:
+Open the isolated note and reload the plugin with the test vault explicitly selected:
+
+```bash
+/Applications/Obsidian.app/Contents/MacOS/obsidian-cli vault=vault open path=vertical-guide-regression-test.md
+/Applications/Obsidian.app/Contents/MacOS/obsidian-cli vault=vault plugin:reload id=bullet
+```
+
+Before any UI interaction, use Computer Use to confirm the Obsidian window title identifies the `vault` test vault and does not identify `base`. Then use Live Preview and verify:
 
 1. Place the cursor in `leaf one` and click the vertical guide represented by `parent`.
 2. Confirm `parent`, `branch one`, `leaf sibling`, and `branch two` remain visible.
