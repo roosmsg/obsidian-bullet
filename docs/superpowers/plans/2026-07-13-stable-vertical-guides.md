@@ -1,6 +1,6 @@
 # Stable Vertical Guides Implementation Plan
 
-> **Superseded mapping:** Immediate-parent mapping in this historical plan is replaced by the outermost-real-ancestor mapping in [`2026-07-13-restore-vertical-guide-folding-design.md`](../specs/2026-07-13-restore-vertical-guide-folding-design.md).
+> **Superseded nested targeting:** Immediate-parent and outermost-only mappings are historical. Each pressed native guide now resolves by its exact indentation boundary as specified in [`2026-07-13-nested-native-guide-targeting-design.md`](../specs/2026-07-13-nested-native-guide-targeting-design.md).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

@@ -1,5 +1,7 @@
 # Restore Vertical Guide Folding Implementation Plan
 
+> **Superseded nested targeting:** The outermost-only mapping in this historical plan is replaced by the exact pressed-boundary mapping in [`2026-07-13-nested-native-guide-targeting-design.md`](../specs/2026-07-13-nested-native-guide-targeting-design.md). Direct-child batch folding, persistent native guides, and selection safety remain current.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Restore legacy vertical-guide clicks so a persistent native guide targets the outermost real list ancestor and batch-toggles that ancestor's direct child branches in both directions without reopening a branch that contains the cursor.

@@ -1,5 +1,7 @@
 # Stable Vertical Guides Design
 
+> **Superseded nested targeting:** Immediate-parent and outermost-only mappings are historical. Each pressed native guide now resolves by its exact indentation boundary as specified in [`2026-07-13-nested-native-guide-targeting-design.md`](./2026-07-13-nested-native-guide-targeting-design.md).
+
 ## Problem
 
 Vertical indentation guides are currently drawn in a second scrollable overlay. The implementation measures CodeMirror DOM, copies scroll offsets into the overlay, caches coordinates when virtualized DOM disappears, and applies several fixed vertical offsets. Recent history contains repeated fixes for disappearing, drifting, and lagging guides, which shows that the overlay is competing with CodeMirror's rendering lifecycle instead of participating in it.

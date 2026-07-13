@@ -1,5 +1,7 @@
 # Restore Vertical Guide Folding Design
 
+> **Superseded nested targeting:** The outermost-only mapping in this historical design is replaced by the exact pressed-boundary mapping in [`2026-07-13-nested-native-guide-targeting-design.md`](./2026-07-13-nested-native-guide-targeting-design.md). Direct-child batch folding, persistent native guides, and selection safety remain current.
+
 ## Problem
 
 The native-guide refactor changed both the target and the meaning of a vertical-guide click. The legacy overlay kept the represented parent and its direct items visible while folding or unfolding the descendant branches rooted at the parent's direct non-empty children. The native implementation initially folded the represented parent itself and mapped the one native guide on a deeply nested line to the immediate parent.
