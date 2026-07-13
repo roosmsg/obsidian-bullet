@@ -1,5 +1,7 @@
 # Stable Vertical Guides Implementation Plan
 
+> **Superseded mapping:** Immediate-parent mapping in this historical plan is replaced by the outermost-real-ancestor mapping in [`2026-07-13-restore-vertical-guide-folding-design.md`](../specs/2026-07-13-restore-vertical-guide-folding-design.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the independently scrolling vertical-guide overlay with Obsidian-owned indentation guides while preserving click-to-fold behavior.

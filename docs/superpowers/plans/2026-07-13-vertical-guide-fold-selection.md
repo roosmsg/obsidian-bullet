@@ -1,6 +1,6 @@
 # Vertical Guide Fold Selection Implementation Plan
 
-> **Superseded call-site behavior:** The steps below that fold the represented parent itself are replaced by the direct-child batch behavior in [`2026-07-13-restore-vertical-guide-folding-design.md`](../specs/2026-07-13-restore-vertical-guide-folding-design.md). The `MyEditor.foldEnsuringCursorVisible` implementation and its atomic selection-safety tests remain valid.
+> **Superseded call-site behavior and mapping:** The steps below that fold the represented parent itself or preserve immediate-parent mapping are replaced by the direct-child batch behavior and outermost-real-ancestor mapping in [`2026-07-13-restore-vertical-guide-folding-design.md`](../specs/2026-07-13-restore-vertical-guide-folding-design.md). The `MyEditor.foldEnsuringCursorVisible` implementation and its atomic selection-safety tests remain valid.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

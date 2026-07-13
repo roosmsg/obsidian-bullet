@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Restore legacy vertical-guide clicks so they batch-toggle direct child branches without folding the represented parent or reopening a branch that contains the cursor.
+**Goal:** Restore legacy vertical-guide clicks so the single native guide targets the outermost real list ancestor and batch-toggles that ancestor's direct child branches without reopening a branch that contains the cursor.
 
-**Architecture:** Keep the native `.cm-indent::before` rendering and capture-phase guide handler unchanged. Replace only `toggleVerticalGuideTarget`'s parent-self fold with the legacy direct-child batch algorithm, routing child folds through `MyEditor.foldEnsuringCursorVisible`.
+**Architecture:** Keep the native `.cm-indent::before` rendering and capture-phase guide handler unchanged. Map the pressed line to its outermost real list ancestor, then run the legacy direct-child batch algorithm through `MyEditor.foldEnsuringCursorVisible`.
 
 **Tech Stack:** TypeScript 5.9, Obsidian 1.13.1, CodeMirror 6, Jest 30, Rollup 4.
 
@@ -14,7 +14,7 @@
 - Do not reintroduce overlay DOM, measurements, coordinate caches, or scroll synchronization.
 - Keep `.cm-indent::before` as the only vertical-guide rendering source.
 - Keep `contentDOM` capture-phase `mousedown` handling and listener cleanup unchanged.
-- Keep the current native guide-to-immediate-parent mapping unchanged.
+- Map one native `.cm-indent` to the outermost real list ancestor before the parser's synthetic root.
 - Never fold or unfold the represented parent itself from a vertical-guide click.
 - Ignore direct leaves and batch-toggle only direct children for which `isEmpty()` is false.
 - If any collected child is open, fold every collected child; if all are folded, unfold every collected child.
@@ -44,7 +44,7 @@
 - Consumes: `MyEditor.foldEnsuringCursorVisible(line: number, fallbackCursor: MyEditorPosition): void` and `MyEditor.unfold(line: number): void`.
 - Produces: `toggleVerticalGuideTarget(editor, list): boolean`, where `true` means a direct-child batch action was selected and `false` means the target has no foldable direct child branches.
 
-- [ ] **Step 1: Replace the parent-self helper tests with the legacy batch expectations**
+- [x] **Step 1: Replace the parent-self helper tests with the legacy batch expectations**
 
 Replace the first two tests in `describe("toggleVerticalGuideTarget")` with:
 
@@ -100,7 +100,7 @@ test("unfolds each direct non-empty child when every branch is folded", () => {
 
 These expectations prove that the represented parent at line `0` and the direct leaf at line `3` are untouched.
 
-- [ ] **Step 2: Update the handler regression expectation**
+- [x] **Step 2: Update the handler regression expectation**
 
 In `test("folds the ancestor represented by a native indentation guide")`, replace the parent-self expectation with:
 
@@ -115,7 +115,7 @@ expect(editor.unfold).not.toHaveBeenCalled();
 
 Keep the existing assertions for `handleMouseDown`, `posAtDOM`, parser input, and `preventDefault`.
 
-- [ ] **Step 3: Run the focused tests and verify the regression tests fail**
+- [x] **Step 3: Run the focused tests and verify the regression tests fail**
 
 Run:
 
@@ -125,7 +125,7 @@ SKIP_OBSIDIAN=1 npx jest --forceExit --runInBand src/features/__tests__/Vertical
 
 Expected: FAIL. The current implementation calls `foldEnsuringCursorVisible(0, { line: 0, ch: 2 })` once for the represented parent, rather than lines `1` and `4` for its child branches; the fully folded case also unfolds line `0` rather than lines `1` and `4`.
 
-- [ ] **Step 4: Implement the minimal direct-child batch algorithm**
+- [x] **Step 4: Implement the minimal direct-child batch algorithm**
 
 Replace `toggleVerticalGuideTarget`'s body with:
 
@@ -148,9 +148,9 @@ for (const child of children) {
 return true;
 ```
 
-Do not change `resolveVerticalGuideTarget`, the event listener, or `MyEditor.foldEnsuringCursorVisible`.
+Do not change `resolveVerticalGuideTarget`, the event listener, or `MyEditor.foldEnsuringCursorVisible` in this task. Task 2 corrects the mapping after live Obsidian evidence invalidated the earlier assumption.
 
-- [ ] **Step 5: Run the focused tests and verify they pass**
+- [x] **Step 5: Run the focused tests and verify they pass**
 
 Run:
 
@@ -160,7 +160,7 @@ SKIP_OBSIDIAN=1 npx jest --forceExit --runInBand src/features/__tests__/Vertical
 
 Expected: both suites PASS. The vertical-guide suite proves legacy batch targeting, and the editor suite continues to prove atomic selection relocation.
 
-- [ ] **Step 6: Run static checks**
+- [x] **Step 6: Run static checks**
 
 Run:
 
@@ -170,7 +170,7 @@ npm run lint
 
 Expected: Prettier reports all matched files use its style and ESLint exits with status `0` and no warnings.
 
-- [ ] **Step 7: Commit the implementation**
+- [x] **Step 7: Commit the implementation**
 
 Run:
 
@@ -189,7 +189,54 @@ What:
 
 Expected: the commit succeeds and its hooks pass.
 
-### Task 2: Complete Automated and Obsidian Verification
+### Task 2: Map the Native Guide to the Outermost Real Ancestor
+
+**Files:**
+- Modify: `src/features/__tests__/VerticalLines.test.ts:149-216,387-422`
+- Modify: `src/features/VerticalLines.ts:16-19`
+
+**Interfaces:**
+- Consumes: `List.getParent(): List | null` and the parser convention that the top container has no parent.
+- Produces: `resolveVerticalGuideTarget(list): List | null`, selecting the last real ancestor before the synthetic root.
+
+- [ ] **Step 1: Change the deep mapping test to require the outermost real ancestor**
+
+For `- parent / - child / - grandchild`, require the guide on `grandchild` to resolve to line `0`, not line `1`. Keep the leading-indentation, note-line, and root-item cases.
+
+- [ ] **Step 2: Strengthen the handler regression with the live fixture shape**
+
+Use the `parent / branch one / leaf one / leaf sibling / branch two / leaf two` fixture. Dispatch the guide event from the `leaf one` line and require folds for branch roots at lines `1` and `4`, never the immediate parent alone.
+
+- [ ] **Step 3: Run the focused test and confirm RED**
+
+Run:
+
+```bash
+SKIP_OBSIDIAN=1 npx jest --forceExit --runInBand src/features/__tests__/VerticalLines.test.ts
+```
+
+Expected: FAIL because the deep mapping returns line `1`, and the handler targets only the immediate parent.
+
+- [ ] **Step 4: Implement the minimal ancestor walk**
+
+Walk upward from the pressed line's owning list. Remember each ancestor that itself has a parent, and return the last such ancestor. This excludes the parser's synthetic root and returns `null` for a root list item.
+
+- [ ] **Step 5: Run focused tests and lint**
+
+Run:
+
+```bash
+SKIP_OBSIDIAN=1 npx jest --forceExit --runInBand src/features/__tests__/VerticalLines.test.ts src/editor/__tests__/index.test.ts
+npm run lint
+```
+
+Expected: both suites and lint pass.
+
+- [ ] **Step 6: Commit the mapping correction**
+
+Create an English Conventional Commit with detailed `Why` and `What` sections. Include only the source and unit-test changes in the implementation commit.
+
+### Task 3: Complete Automated and Obsidian Verification
 
 **Files:**
 - Create temporarily: `vault/vertical-guide-regression-test.md`

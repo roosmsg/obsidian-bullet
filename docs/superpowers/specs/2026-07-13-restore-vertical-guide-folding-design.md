@@ -2,13 +2,16 @@
 
 ## Problem
 
-The native-guide refactor changed the meaning of a vertical-guide click. The legacy overlay kept the represented parent and its direct items visible while folding or unfolding the descendant branches rooted at the parent's direct non-empty children. The native implementation instead folds the represented parent itself.
+The native-guide refactor changed both the target and the meaning of a vertical-guide click. The legacy overlay kept the represented parent and its direct items visible while folding or unfolding the descendant branches rooted at the parent's direct non-empty children. The native implementation initially folded the represented parent itself and mapped the one native guide on a deeply nested line to the immediate parent.
+
+Live verification in Obsidian 1.13.1 showed that the immediate-parent mapping does not match the rendered guide. The `branch one` row in the regression fixture has no `.cm-indent`; the single `.cm-indent` on the deeper `leaf one` row paints the outermost indentation boundary and therefore represents `parent`. Mapping that element to `branch one` produces a no-op because `branch one` has no direct non-empty children.
 
 The later selection-safety fix made that new behavior stable, but it did not restore the legacy folding contract. As a result, clicking a guide hides a different set of list items than it did before the native-guide refactor.
 
 ## Goals
 
 - Restore the legacy click behavior for the parent represented by a native guide.
+- Map the single native guide to the outermost real list ancestor before the parser's synthetic root.
 - Keep the represented parent and its direct leaves visible.
 - Fold all direct child branches when any direct child branch is open.
 - Unfold all direct child branches when every direct child branch is folded.
@@ -18,7 +21,7 @@ The later selection-safety fix made that new behavior stable, but it did not res
 ## Non-goals
 
 - Reintroduce the plugin-owned guide overlay, coordinate cache, or scroll synchronization.
-- Change native guide-to-parent mapping.
+- Recreate independent per-depth hit targets when Obsidian exposes only one native guide element.
 - Change folding commands outside vertical-guide interaction.
 - Add delayed refolding or event-order workarounds.
 
@@ -34,6 +37,16 @@ Select the direct non-empty children exactly as the old implementation did, whil
 
 This is the chosen approach.
 
+### Keep the immediate-parent mapping
+
+This was the initial native-guide design, but it assumes that a guide exists on the immediate child's row or that the one guide on a deeper row represents the immediate parent. Obsidian 1.13.1 disproves both assumptions for the regression fixture, so this approach cannot restore the visible old interaction.
+
+### Map the native guide to the outermost real ancestor
+
+Walk from the list owning the pressed line toward the parser's synthetic root and select the last real ancestor. This matches the outermost boundary painted by the single native `.cm-indent` and lets the existing direct-child batch operation reproduce the old visible behavior without adding overlay geometry.
+
+This is the chosen target-mapping approach.
+
 ### Restore the overlay implementation
 
 The old overlay provides independent per-depth guide elements, but it also restores the second scrolling and geometry system that drifted during CodeMirror virtualization. The requested folding behavior does not require that rendering architecture.
@@ -42,11 +55,12 @@ The old overlay provides independent per-depth guide elements, but it also resto
 
 After resolving the parent represented by the pressed native guide:
 
-1. Collect the parent's direct children whose `isEmpty()` value is false. These are the branch roots that can hide descendants.
-2. If there are no such children, do nothing and allow the normal mouse interaction to continue.
-3. If every collected child is folded, unfold every collected child.
-4. Otherwise, fold every collected child with `foldEnsuringCursorVisible`, using that child's first-line content start as its fallback cursor.
-5. Report the guide press as handled only after the batch action is selected.
+1. Walk the pressed line's owning list toward the synthetic root and select its outermost real ancestor. If no real ancestor exists, allow normal mouse interaction to continue.
+2. Collect the target ancestor's direct children whose `isEmpty()` value is false. These are the branch roots that can hide descendants.
+3. If there are no such children, do nothing and allow the normal mouse interaction to continue.
+4. If every collected child is folded, unfold every collected child.
+5. Otherwise, fold every collected child with `foldEnsuringCursorVisible`, using that child's first-line content start as its fallback cursor.
+6. Report the guide press as handled only after the batch action is selected.
 
 The parent itself is never passed to `fold`, `foldEnsuringCursorVisible`, or `unfold`. Direct leaves are never passed to those methods, so they remain visible in both states.
 
@@ -60,7 +74,7 @@ Sequential child operations are safe because only one branch can contain the mai
 
 - `.cm-indent::before` remains the only guide-rendering source.
 - `contentDOM` continues to observe `mousedown` in the capture phase.
-- The pressed line is parsed and mapped to its immediate real list parent.
+- The pressed line is parsed and mapped to its outermost real list ancestor before the parser's synthetic root.
 - The handler continues to ignore disabled settings, non-guide targets, unavailable editor state, parse failures, and synthetic-root targets.
 - No overlay DOM, layout observer, animation-frame scheduler, or coordinate cache is added.
 
@@ -68,6 +82,8 @@ Sequential child operations are safe because only one branch can contain the mai
 
 Unit tests will verify that:
 
+- A deeply nested line's single native guide resolves to the outermost real ancestor, not its immediate parent.
+- A root item, including one with leading indentation, has no real ancestor target.
 - Any open direct child causes all direct non-empty children to receive selection-safe folds.
 - Every folded direct child causes all direct non-empty children to unfold.
 - Each child fold receives that child's own line and content-start fallback cursor.
@@ -81,4 +97,4 @@ After focused tests pass, verification will run lint, `build-with-tests`, the co
 
 ## Documentation Corrections
 
-The stable native-guide design and agent guidance must state the legacy batch-child contract. The earlier selection design remains valid at the `MyEditor` boundary but must describe child-branch folds instead of folding the represented parent itself.
+The stable native-guide design and agent guidance must state both the outermost-ancestor mapping and the legacy batch-child contract. The earlier selection design remains valid at the `MyEditor` boundary but must describe child-branch folds instead of folding the represented parent itself. Historical plans that specify immediate-parent mapping are superseded by this design.

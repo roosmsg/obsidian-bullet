@@ -1,5 +1,7 @@
 # Vertical Guide Fold Selection Design
 
+> **Superseded mapping:** The immediate-parent mapping constraints in this document are replaced by the outermost-real-ancestor mapping in [`2026-07-13-restore-vertical-guide-folding-design.md`](./2026-07-13-restore-vertical-guide-folding-design.md). The atomic selection-safety design remains valid.
+
 ## Problem
 
 In Obsidian 1.13.1, clicking a native `.cm-indent` guide can fold one of the represented parent's direct child branches for a moment and then immediately unfold it. The behavior is reproducible when the editor selection is inside that child branch.

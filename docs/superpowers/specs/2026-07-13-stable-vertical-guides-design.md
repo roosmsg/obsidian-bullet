@@ -51,8 +51,8 @@ When a `.cm-indent` element is pressed:
 
 1. Resolve the containing `.cm-line` and its document position with `EditorView.posAtDOM`.
 2. Parse the list block containing that line and find the list item that owns the line, including note lines.
-3. Treat the native `.cm-indent` as the guide for the owning list item's immediate parent. Obsidian renders the complete indentation text inside one `.cm-indent`; it does not create one element per nesting level.
-4. Select the immediate parent unless it is the parser's synthetic root.
+3. Treat the native `.cm-indent` as the guide for the owning list item's outermost real ancestor. Obsidian renders the complete indentation text inside one `.cm-indent`; it does not create one element per nesting level, and the painted boundary is the outermost one.
+4. Walk the ancestor chain and select the last real list before the parser's synthetic root.
 5. Toggle the parent's direct non-empty children while keeping the parent and its direct leaves visible.
 6. If every non-empty child is folded, unfold every child. Otherwise, fold every child with a selection-safe fold operation.
 
@@ -69,7 +69,7 @@ The old `.bullet-plugin-list-lines-scroller`, `.bullet-plugin-list-lines-content
 Tests will focus on behavior rather than mocked geometry:
 
 - Map a direct-child guide to its parent.
-- Map a deeply nested line's native guide to its immediate ancestor.
+- Map a deeply nested line's native guide to its outermost real ancestor.
 - Ignore leading indentation on a root list item because it has no real ancestor.
 - Resolve note lines to their owning list item.
 - Toggle the represented parent's direct non-empty children between folded and unfolded states without folding the parent itself.
