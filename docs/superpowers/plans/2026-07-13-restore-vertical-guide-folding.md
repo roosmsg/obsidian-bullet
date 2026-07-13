@@ -249,7 +249,7 @@ Create an English Conventional Commit with detailed `Why` and `What` sections. I
 - Produces: plugin-owned promotions carrying both `.cm-indent` and `.bullet-plugin-persistent-indent-guide`.
 - Uses: `EditorView.requestMeasure` write phase, `PluginValue.update`, `Settings.onChange`, and `Settings.removeCallback`.
 
-- [ ] **Step 1: Add failing promotion-helper tests**
+- [x] **Step 1: Add failing promotion-helper tests**
 
 Add tests proving that synchronization:
 
@@ -260,7 +260,7 @@ Add tests proving that synchronization:
 5. Requires marker-scoped CSS to keep promoted spans at their original inline width (`min-width: 0; display: inline`).
 6. Requires the promoted native `::before` to stack above the folded branch chevron (`z-index: 2`) without changing guide geometry.
 
-- [ ] **Step 2: Add failing ViewPlugin lifecycle tests**
+- [x] **Step 2: Add failing ViewPlugin lifecycle tests**
 
 Extend the constructor/destroy test and add update/setting coverage proving that:
 
@@ -270,7 +270,7 @@ Extend the constructor/destroy test and add update/setting coverage proving that
 4. Destroy removes the capture listener, unregisters the setting callback, and synchronously removes plugin-owned promotions.
 5. A queued write after destroy is a no-op.
 
-- [ ] **Step 3: Run the focused vertical-line test and confirm RED**
+- [x] **Step 3: Run the focused vertical-line test and confirm RED**
 
 Run:
 
@@ -280,7 +280,7 @@ SKIP_OBSIDIAN=1 npx jest --forceExit --runInBand src/features/__tests__/Vertical
 
 Expected: FAIL because no promotion helper or lifecycle synchronization exists.
 
-- [ ] **Step 4: Implement minimal persistent native-guide promotion**
+- [x] **Step 4: Implement minimal persistent native-guide promotion**
 
 Implement an exported synchronization helper and integrate it into `VerticalLinesPluginValue`:
 
@@ -293,7 +293,7 @@ Implement an exported synchronization helper and integrate it into `VerticalLine
 
 Add only marker-scoped CSS that resets `min-width` and `display` and raises the existing `::before` above the chevron with `z-index: 2`; do not define guide offset, width, border, color, or theme behavior. Do not add DOM elements, measurements, observers, animation frames, or coordinate state. Existing `.cm-indent::before` and cursor styling must render the promoted spans.
 
-- [ ] **Step 5: Run focused GREEN tests and lint**
+- [x] **Step 5: Run focused GREEN tests and lint**
 
 Run:
 
@@ -305,7 +305,7 @@ git diff --check
 
 Expected: focused suites, lint, and diff check pass.
 
-- [ ] **Step 6: Commit the persistent-guide implementation**
+- [x] **Step 6: Commit the persistent-guide implementation**
 
 Commit the source/test/style changes with an English Conventional Commit and detailed `Why`/`What`. The implementation may use a follow-up commit if a layout-preservation defect is discovered after the initial promotion commit.
 
@@ -319,7 +319,7 @@ Commit the source/test/style changes with an English Conventional Commit and det
 - Consumes: production `dist/main.js`, `manifest.json`, and `styles.css`.
 - Produces: evidence that the restored interaction works in Obsidian 1.13.1 and that all automated checks pass.
 
-- [ ] **Step 1: Build the test-enabled bundle before the full suite**
+- [x] **Step 1: Build the test-enabled bundle before the full suite**
 
 Run:
 
@@ -329,7 +329,7 @@ npm run build-with-tests
 
 Expected: Rollup completes successfully and produces a test-enabled `dist/main.js`.
 
-- [ ] **Step 2: Run the complete Jest suite**
+- [x] **Step 2: Run the complete Jest suite**
 
 Run:
 
@@ -339,7 +339,7 @@ npm test -- --runInBand
 
 Expected: all test suites pass. Jest may print the repository's existing `--forceExit` advisory, but there must be no failed suite or failed test.
 
-- [ ] **Step 3: Build the production bundle**
+- [x] **Step 3: Build the production bundle**
 
 Run:
 
@@ -349,7 +349,7 @@ npm run build
 
 Expected: Rollup completes successfully and replaces `dist/main.js` with the production bundle.
 
-- [ ] **Step 4: Install the production artifacts into the repository test vault**
+- [x] **Step 4: Install the production artifacts into the repository test vault**
 
 Run:
 
@@ -360,7 +360,7 @@ shasum -a 256 dist/main.js manifest.json styles.css vault/.obsidian/plugins/bull
 
 Expected: each repository artifact has the same SHA-256 hash as its installed counterpart.
 
-- [ ] **Step 5: Create an isolated manual-test note**
+- [x] **Step 5: Create an isolated manual-test note**
 
 Use `apply_patch` to create `vault/vertical-guide-regression-test.md` with exactly:
 
@@ -408,7 +408,7 @@ Use `apply_patch` to create `vault/vertical-guide-regression-test.md` with exact
 - scroll filler 30
 ```
 
-- [ ] **Step 6: Verify the interaction in Obsidian 1.13.1**
+- [x] **Step 6: Verify the interaction in Obsidian 1.13.1**
 
 Open the isolated note and reload the plugin with the test vault explicitly selected:
 
@@ -437,11 +437,11 @@ Then use Live Preview and verify:
 
 Expected: every check passes, including the inside-selection case that previously reopened immediately.
 
-- [ ] **Step 7: Remove temporary accessibility metadata and the isolated manual-test note**
+- [x] **Step 7: Remove temporary accessibility metadata and the isolated manual-test note**
 
 Use `apply_patch` to delete `vault/vertical-guide-regression-test.md` after the Obsidian checks pass.
 
-- [ ] **Step 8: Confirm the repository is clean except for the plan record**
+- [x] **Step 8: Confirm the repository is clean except for the plan record**
 
 Run:
 
@@ -461,7 +461,7 @@ Expected: only this implementation plan is modified to record completed checkbox
 - Consumes: focused-test, lint, full-suite, production-build, artifact-hash, and Obsidian verification results from Tasks 1 through 4.
 - Produces: a durable execution record on `main` and an updated `origin/main`.
 
-- [ ] **Step 1: Record the completed verification results**
+- [x] **Step 1: Record the completed verification results**
 
 Mark every completed checkbox in this plan as `[x]` and append a `## Verification Results` section containing:
 
@@ -481,7 +481,7 @@ Mark every completed checkbox in this plan as `[x]` and append a `## Verificatio
 
 If the exact Jest summary values printed in Task 4 differ from these expected counts, replace this line with the observed values before committing the record.
 
-- [ ] **Step 2: Review the final diff and history**
+- [x] **Step 2: Review the final diff and history**
 
 Run:
 
@@ -493,7 +493,7 @@ git log --oneline --decorate -5
 
 Expected: the plan contains only accurate execution evidence, the implementation commit follows the design commit, and no unrelated files are changed.
 
-- [ ] **Step 3: Commit the execution record**
+- [x] **Step 3: Commit the execution record**
 
 Run:
 
@@ -532,3 +532,27 @@ git log --oneline --decorate -5
 ```
 
 Expected: the worktree is clean and `HEAD`, `main`, and `origin/main` point to the same final commit. No package version or release tag is created.
+
+## Verification Results
+
+- Focused vertical-guide and editor tests: PASS (2 suites, 27 tests)
+- Lint: PASS
+- CSS formatting: PASS
+- TypeScript `--noEmit`: PASS
+- Test-enabled build: PASS
+- Complete Jest suite: PASS (55 suites, 329 passed, 14 skipped, 343 total)
+- Production build: PASS
+- Installed artifact hashes: MATCH
+  - `main.js`: `becb6cb9c41fa424bb798c50a5c99d96a406c8efe22d36e5279106bd7b493c6d`
+  - `manifest.json`: `4bcb58df6f6319695ae3e88e0750b6c9b4307a501774cc90d7df56fc7e1180d2`
+  - `styles.css`: `22f43dbed2a57ccbc9d9ba69e08a6660cc759c2c9414d84ac7a76abcd3c83cfe`
+- Obsidian 1.13.1 direct-child batch fold/unfold: PASS
+- Obsidian 1.13.1 inside-selection fold persistence and cursor relocation: PASS
+- Mixed folded/open child convergence: PASS
+- Promoted guide layout preservation: PASS (grandchild remains `9.625px` farther right)
+- Branch-only parent fold and reopen above the native chevron: PASS (`elementFromPoint` target guide, guide z-index `2`, chevron z-index `1`)
+- Native guide scrolling/alignment: PASS (down/up positions stable, overlay count `0`)
+- Final guarded test-vault run: PASS (every UI action used the `vault` title guard; no `base` action)
+- Temporary fixture and accessibility metadata cleanup: PASS
+- Final broad code review: APPROVED (no blocking, important, or minor findings)
+- Package version/release tag changes: NONE
