@@ -59,7 +59,7 @@ viewport上端自体が閉じる範囲内にある場合は、非表示になる
 toggle actionが有効な間は `scrollPastEnd()` で1 viewport弱の下端余白を確保し、この物理的なclampを避ける。
 
 縦線操作の直前に、実DOMの下端余白がCodeMirror標準の計算値より小さいかを確認する。
-計算値には `editorHeight - defaultLineHeight - documentPadding.top - 0.5` を使う。
+計算値には、CodeMirror内部の `editorHeight` と同じ実寸を公開DOMから得る `scrollDOM.clientHeight - defaultLineHeight - documentPadding.top - 0.5` を使う。
 Obsidianによって余白が小さく上書きされている場合だけ、`contentDOM.style.paddingBottom` を計算値へ復元してからsnapshotを取得する。
 常時監視、遅延した再設定、dispatch後の手動scroll補正は使わない。
 toggle actionが無効な場合と、native chevronを含む縦線以外の操作では復元しない。
