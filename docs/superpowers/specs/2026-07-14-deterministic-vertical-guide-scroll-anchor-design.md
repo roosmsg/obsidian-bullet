@@ -41,7 +41,8 @@ transactionには次を同居させる。
 - 現在のselection headが閉じる範囲内にある場合の安全なselection。
 
 scroll snapshotは実際のviewport上端を基準にする。
-scroll containerの上端と `EditorView.documentTop` の差を `scaleY` で補正し、CodeMirror document内でviewport上端にある高さを求める。
+scroll containerの上端と `EditorView.documentTop` の差から、CodeMirror document内でviewport上端にあるscreen座標を求める。
+`lineBlockAtHeight()` はdocument上端を基準とするscreen座標を受け取るため、CSS transform時もこの差を `scaleY` で除算しない。
 その高さへCodeMirrorと同じ8pxのbiasを加え、`lineBlockAtHeight()` でanchor行を取得する。
 
 `scrollSnapshot()` が返したsnapshot targetのrangeをanchor行へ置き換え、`yMargin` を `anchor.top - scrollTop` に設定する。
