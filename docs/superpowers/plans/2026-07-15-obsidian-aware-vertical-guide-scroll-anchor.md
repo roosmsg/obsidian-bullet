@@ -204,7 +204,7 @@ Expected: buildがexit 0で完了する。
 
 - [x] **Step 2: 全自動テストを実行する**
 
-Run: `cp vault/test.md /tmp/obsidian-bullet-test.md && npm test -- --runInBand; status=$?; cp /tmp/obsidian-bullet-test.md vault/test.md; exit $status`
+Run: `cp vault/test.md /tmp/obsidian-bullet-test.md; npm test -- --runInBand; status=$?; for i in {1..30}; do obsidian-cli vault=vault eval code='document.title' >/dev/null 2>&1 || break; sleep 1; done; cp /tmp/obsidian-bullet-test.md vault/test.md; sleep 2; cmp /tmp/obsidian-bullet-test.md vault/test.md; exit $status`
 
 Expected: 全test suiteがPASSする。
 
@@ -251,19 +251,19 @@ Expected: whitespace errorがなく、追跡対象の生成物がない。
 - Consumes: Task 2で全検証を通したdefault branch
 - Produces: patch version commit、git tag、origin/mainへのpush
 
-- [ ] **Step 1: release直前にupstreamを取り込む**
+- [x] **Step 1: release直前にupstreamを取り込む**
 
 Run: `git fetch && git pull --ff-only`
 
 Expected: fast-forwardまたは `Already up to date.`。
 
-- [ ] **Step 2: patch versionを作成する**
+- [x] **Step 2: patch versionを作成する**
 
 Run: `npm version patch`
 
 Expected: version filesが更新され、version commitとtagが作成される。
 
-- [ ] **Step 3: branchとtagをpushする**
+- [x] **Step 3: branchとtagをpushする**
 
 Run: `git push && git push --tags`
 
