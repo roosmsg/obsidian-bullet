@@ -6,6 +6,10 @@
 
 **Architecture:** Add a vertical-guide-specific batch fold API to `MyEditor` that resolves every fold range from one state and dispatches one transaction containing one `EditorView.scrollSnapshot()`, all fold or unfold effects, and an optional safe selection. Route nested and outer guide toggles through that API while leaving native chevrons and existing single-line folding commands unchanged.
 
+**Bottom-boundary addendum:** `scrollSnapshot()` cannot preserve the upper viewport when folding reduces the document below the browser's maximum `scrollTop`. While vertical-guide toggle folding is enabled, register CodeMirror's standard `scrollPastEnd()` extension through Obsidian's mutable editor-extension array. Remove it when the action is disabled. Do not introduce custom padding or manual scroll correction.
+
+**Sub-pixel addendum:** Before dispatch, normalize the snapshot's `yMargin` to the physical-pixel grid derived from `devicePixelRatio`. Chromium rounds `scrollTop` to that grid; without normalization, each fold/unfold snapshot can learn the previous half-pixel rounding and accumulate drift. Keep the normalized snapshot in the same transaction.
+
 **Tech Stack:** TypeScript, CodeMirror 6 fold effects and scroll snapshots, Obsidian Live Preview, Jest 30, Rollup.
 
 ## Global Constraints
@@ -18,6 +22,7 @@
 - Use one CodeMirror transaction and one scroll snapshot per vertical-guide click, including outer guides with multiple targets.
 - Keep safe selection and fold effects in the same transaction.
 - Do not restore `scrollTop` manually, schedule a delayed correction, or add a DOM coordinate cache.
+- Use CodeMirror's standard `scrollPastEnd()` only while vertical-guide toggle folding is enabled so document-end folds are not clamped to the new maximum `scrollTop`.
 - Run `.spec.md` integration tests only after `npm run build-with-tests`.
 - Use only the repository `vault` for live Obsidian verification. Never open or modify `/Users/kodai/base`.
 - Install build artifacts only into `vault/.obsidian/plugins/bullet/`; do not create another plugin directory.
