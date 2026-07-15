@@ -43,7 +43,7 @@ If the current fixture cannot reach state, observe the drop-zone left style afte
 
 - [ ] **Step 2: Run DragAndDrop tests and confirm RED**
 
-Run: npx jest src/features/__tests__/DragAndDrop.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/features/__tests__/DragAndDrop.test.ts --runInBand
 
 Expected: at least one new assertion fails before the fixture supplies the fallback DOM.
 
@@ -55,7 +55,7 @@ Confirm the three tests fail if getDragAndDropLeftPadding always returns zero.
 
 - [ ] **Step 4: Run DragAndDrop tests and confirm GREEN with current production code**
 
-Run: npx jest src/features/__tests__/DragAndDrop.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/features/__tests__/DragAndDrop.test.ts --runInBand
 
 Expected: PASS.
 
@@ -81,7 +81,7 @@ Delete dragAndDropMeasurements.ts and its direct test file.
 
 - [ ] **Step 3: Run focused tests**
 
-Run: npx jest src/features/__tests__/DragAndDrop.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/features/__tests__/DragAndDrop.test.ts --runInBand
 
 Expected: PASS with the integrated measurement cases.
 

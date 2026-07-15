@@ -47,7 +47,7 @@ expect(result).toEqual({ shouldUpdate: true, shouldStopPropagation: true });
 
 - [ ] **Step 2: Run the focused test and confirm RED**
 
-Run: npx jest src/services/__tests__/OperationPerformer.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/services/__tests__/OperationPerformer.test.ts --runInBand
 
 Expected: FAIL because Operation.perform returns void and nullable factories are unsupported.
 
@@ -93,7 +93,7 @@ perform(
 
 - [ ] **Step 5: Run the focused test and confirm GREEN**
 
-Run: npx jest src/services/__tests__/OperationPerformer.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/services/__tests__/OperationPerformer.test.ts --runInBand
 
 Expected: PASS after a temporary test operation uses the new interface.
 
@@ -125,7 +125,7 @@ Delete assertions against mutable getters.
 
 - [ ] **Step 2: Run MoveListUp tests and confirm RED**
 
-Run: npx jest src/operations/__tests__/MoveListUp.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/operations/__tests__/MoveListUp.test.ts --runInBand
 
 Expected: FAIL because perform returns void.
 
@@ -137,7 +137,7 @@ Do not store updated or stopPropagation fields.
 
 - [ ] **Step 4: Run MoveListUp tests and confirm GREEN**
 
-Run: npx jest src/operations/__tests__/MoveListUp.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/operations/__tests__/MoveListUp.test.ts --runInBand
 
 Expected: PASS.
 
@@ -161,7 +161,7 @@ Keep all Root.print and cursor assertions unchanged.
 
 - [ ] **Step 7: Run the entire operation test directory**
 
-Run: npx jest src/operations --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/operations --runInBand
 
 Expected: all operation suites pass.
 
@@ -191,7 +191,7 @@ Assert guard conditions return NO_OP_OUTCOME through a null factory.
 
 - [ ] **Step 2: Run the four feature suites and confirm RED**
 
-Run: npx jest src/features/__tests__/TabBehaviourOverride.test.ts src/features/__tests__/EnterBehaviourOverride.test.ts src/features/__tests__/VimOBehaviourOverride.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/features/__tests__/TabBehaviourOverride.test.ts src/features/__tests__/EnterBehaviourOverride.test.ts src/features/__tests__/VimOBehaviourOverride.test.ts --runInBand
 
 Expected: FAIL because constructors still require Parser.
 
@@ -220,7 +220,7 @@ Retain Parser for VerticalLines, DragAndDrop, and EditorSelectionsBehaviourOverr
 
 - [ ] **Step 5: Run feature and plugin tests and confirm GREEN**
 
-Run: npx jest src/features src/__tests__/ObsidianBulletPlugin.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/features src/__tests__/ObsidianBulletPlugin.test.ts --runInBand
 
 Expected: PASS.
 

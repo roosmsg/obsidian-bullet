@@ -48,7 +48,7 @@ For reset, first change three values, clear the mock, call reset, and assert one
 
 - [ ] **Step 2: Run Settings tests and confirm RED**
 
-Run: npx jest src/services/__tests__/Settings.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/services/__tests__/Settings.test.ts --runInBand
 
 Expected: FAIL because onChange does not accept keys and reset notifies per key.
 
@@ -103,7 +103,7 @@ private update(patch: Partial<SettingsObject>): void {
 
 - [ ] **Step 5: Run Settings tests and confirm GREEN**
 
-Run: npx jest src/services/__tests__/Settings.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/services/__tests__/Settings.test.ts --runInBand
 
 Expected: PASS.
 
@@ -142,7 +142,7 @@ expect(settings.onChange).toHaveBeenCalledWith(
 
 - [ ] **Step 2: Run feature tests and confirm RED**
 
-Run: npx jest src/features --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/features --runInBand
 
 Expected: subscription assertions fail with the old callback-only calls.
 
@@ -154,7 +154,7 @@ Keep removeCallback calls unchanged.
 
 - [ ] **Step 4: Run feature tests and confirm GREEN**
 
-Run: npx jest src/features --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/features --runInBand
 
 Expected: PASS.
 

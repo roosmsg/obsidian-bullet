@@ -43,7 +43,7 @@ The test must not import target resolvers or hover helpers from VerticalLines.
 
 - [ ] **Step 2: Run the feature test and confirm RED**
 
-Run: npx jest src/features/__tests__/VerticalLines.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/features/__tests__/VerticalLines.test.ts --runInBand
 
 Expected: FAIL because GuideFoldingPluginValue does not exist.
 
@@ -75,7 +75,7 @@ Leave only load, unload, body class, and extension activation tests in VerticalL
 
 - [ ] **Step 5: Run both test files and confirm GREEN**
 
-Run: npx jest src/features/__tests__/VerticalLines.test.ts src/features/__tests__/GuideFolding.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/features/__tests__/VerticalLines.test.ts src/features/__tests__/GuideFolding.test.ts --runInBand
 
 Expected: PASS.
 
@@ -109,7 +109,7 @@ Cover chunk splitting, actionable metadata validation, hover grouping, and fold 
 
 - [ ] **Step 2: Run GuideFolding tests and confirm RED**
 
-Run: npx jest src/features/__tests__/GuideFolding.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/features/__tests__/GuideFolding.test.ts --runInBand
 
 Expected: FAIL until outer behavior is internal to GuideFoldingPluginValue.
 
@@ -123,7 +123,7 @@ Delete OuterListGuide.ts after all production imports are gone.
 
 - [ ] **Step 4: Run guide tests and confirm GREEN**
 
-Run: npx jest src/features/__tests__/GuideFolding.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/features/__tests__/GuideFolding.test.ts --runInBand
 
 Expected: PASS.
 
@@ -160,7 +160,7 @@ Retain cases for selection fallback, documentTop offset, scaleY, scrollPastEnd p
 
 - [ ] **Step 2: Run the moved tests and confirm RED**
 
-Run: npx jest src/features/__tests__/GuideFolding.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/features/__tests__/GuideFolding.test.ts --runInBand
 
 Expected: FAIL because GuideFolding still delegates to MyEditor.
 
@@ -187,7 +187,7 @@ Delete only the tests that moved to GuideFolding.test.ts.
 
 - [ ] **Step 5: Run editor and guide tests and confirm GREEN**
 
-Run: npx jest src/editor/__tests__/index.test.ts src/features/__tests__/GuideFolding.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/editor/__tests__/index.test.ts src/features/__tests__/GuideFolding.test.ts --runInBand
 
 Expected: PASS.
 

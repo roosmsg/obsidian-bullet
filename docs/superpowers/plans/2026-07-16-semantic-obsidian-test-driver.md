@@ -45,7 +45,7 @@ expect(Object.keys(target)).toEqual(
 
 - [ ] **Step 2: Run the focused test and confirm RED**
 
-Run: npx jest src/__tests__/jestTestConfig.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/__tests__/jestTestConfig.test.ts --runInBand
 
 Expected: FAIL because jest/obsidian-driver.js does not exist.
 
@@ -84,7 +84,7 @@ Replace the repeated createCommand calls in the Jest environment with one instal
 
 - [ ] **Step 4: Run the focused test and confirm GREEN**
 
-Run: npx jest src/__tests__/jestTestConfig.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/__tests__/jestTestConfig.test.ts --runInBand
 
 Expected: PASS.
 
@@ -123,7 +123,7 @@ Do not add a test-only production method.
 
 - [ ] **Step 2: Run the focused renderer test and confirm RED**
 
-Run: npx jest src/__tests__/ObsidianBulletPluginWithTests.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/__tests__/ObsidianBulletPluginWithTests.test.ts --runInBand
 
 Expected: FAIL because the registry dispatcher does not exist.
 
@@ -156,7 +156,7 @@ Keep WebSocket response formatting in handleTestMessage.
 
 - [ ] **Step 4: Run renderer tests and confirm GREEN**
 
-Run: npx jest src/__tests__/ObsidianBulletPluginWithTests.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/__tests__/ObsidianBulletPluginWithTests.test.ts --runInBand
 
 Expected: PASS.
 
@@ -189,7 +189,7 @@ Add invalid line, missing prefix, and missing outer guide cases that assert desc
 
 - [ ] **Step 2: Run the focused test and confirm RED**
 
-Run: npx jest src/__tests__/ObsidianBulletPluginWithTests.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/__tests__/ObsidianBulletPluginWithTests.test.ts --runInBand
 
 Expected: FAIL because clickGuide is not implemented.
 
@@ -215,7 +215,7 @@ declare function clickGuide(options: {
 
 - [ ] **Step 5: Run renderer tests and confirm GREEN**
 
-Run: npx jest src/__tests__/ObsidianBulletPluginWithTests.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/__tests__/ObsidianBulletPluginWithTests.test.ts --runInBand
 
 Expected: PASS.
 
@@ -246,7 +246,7 @@ Assert that generated code calls clickGuide with the parsed object.
 
 - [ ] **Step 2: Run the transformer test and confirm RED**
 
-Run: npx jest src/__tests__/jestTestConfig.test.ts --runInBand
+Run: SKIP_OBSIDIAN=1 npx jest src/__tests__/jestTestConfig.test.ts --runInBand
 
 Expected: FAIL because clickGuide is an unknown action.
 
