@@ -733,7 +733,7 @@ Expected: `codex/obsidian-review-warnings` owns only this plan, its design, and 
 - Changes: System Information displays the same JSON and closes through a `Close` button without writing to the system clipboard.
 - Changes: drag cursor rules rely on plugin-scoped selector specificity without `!important`.
 
-- [ ] **Step 1: Write failing source-policy tests**
+- [x] **Step 1: Write failing source-policy tests**
 
 Create `src/__tests__/reviewSourcePolicies.test.ts`:
 
@@ -800,7 +800,7 @@ describe("Obsidian review source policies", () => {
 });
 ```
 
-- [ ] **Step 2: Run the source-policy tests and verify RED**
+- [x] **Step 2: Run the source-policy tests and verify RED**
 
 Run:
 
@@ -810,7 +810,7 @@ SKIP_OBSIDIAN=1 npx jest --runInBand src/__tests__/reviewSourcePolicies.test.ts
 
 Expected: FAIL with three failed tests identifying `styles.css`, `src/features/SystemInfo.ts`, and the files that call or define `eval()`.
 
-- [ ] **Step 3: Remove `!important` through selector specificity**
+- [x] **Step 3: Remove `!important` through selector specificity**
 
 Replace the drag cursor rules in `styles.css` with:
 
@@ -830,7 +830,7 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
 }
 ```
 
-- [ ] **Step 4: Run the CSS policy test and verify GREEN**
+- [x] **Step 4: Run the CSS policy test and verify GREEN**
 
 Run:
 
@@ -842,7 +842,7 @@ SKIP_OBSIDIAN=1 npx jest --runInBand \
 
 Expected: one test passes.
 
-- [ ] **Step 5: Remove automatic clipboard writes**
+- [x] **Step 5: Remove automatic clipboard writes**
 
 Keep the existing JSON `<pre>`, and replace the System Information button setup with:
 
@@ -854,7 +854,7 @@ button.onClickEvent(() => {
 });
 ```
 
-- [ ] **Step 6: Run the clipboard policy test and verify GREEN**
+- [x] **Step 6: Run the clipboard policy test and verify GREEN**
 
 Run:
 
@@ -866,7 +866,7 @@ SKIP_OBSIDIAN=1 npx jest --runInBand \
 
 Expected: one test passes.
 
-- [ ] **Step 7: Rename the operation executor**
+- [x] **Step 7: Rename the operation executor**
 
 Replace the low-level method in `src/services/OperationPerformer.ts` and its internal call with:
 
@@ -910,7 +910,7 @@ Update the example in `docs/superpowers/plans/2026-07-16-list-edit-transaction.m
 const result = performer.execute(root, { perform }, editor);
 ```
 
-- [ ] **Step 8: Run executor and source-policy tests and verify GREEN**
+- [x] **Step 8: Run executor and source-policy tests and verify GREEN**
 
 Run:
 
@@ -936,7 +936,7 @@ Expected: both suites pass, with eight tests in total.
 - No new runtime interface beyond Task 7.
 - Produces fresh evidence for lint, types, unit tests, both bundles, restricted-signature search, and the full integration suite.
 
-- [ ] **Step 1: Run formatting and lint**
+- [x] **Step 1: Run formatting and lint**
 
 Run:
 
@@ -946,7 +946,7 @@ npm run lint
 
 Expected: zero errors and zero warnings.
 
-- [ ] **Step 2: Run TypeScript**
+- [x] **Step 2: Run TypeScript**
 
 Run:
 
@@ -956,7 +956,7 @@ npx tsc --noEmit --pretty false
 
 Expected: exit zero.
 
-- [ ] **Step 3: Run all unit tests**
+- [x] **Step 3: Run all unit tests**
 
 Run:
 
@@ -966,7 +966,7 @@ npm run test:unit -- --runInBand
 
 Expected: every unit suite passes.
 
-- [ ] **Step 4: Build and inspect the production bundle**
+- [x] **Step 4: Build and inspect the production bundle**
 
 Run:
 
@@ -979,7 +979,7 @@ fi
 
 Expected: Rollup exits zero and the restricted-signature search produces no matches.
 
-- [ ] **Step 5: Build the integration-test bundle**
+- [x] **Step 5: Build the integration-test bundle**
 
 Run:
 
@@ -989,7 +989,7 @@ npm run build-with-tests
 
 Expected: Rollup exits zero.
 
-- [ ] **Step 6: Protect the integration fixture and run the full suite**
+- [x] **Step 6: Protect the integration fixture and run the full suite**
 
 Create a temporary directory with `mktemp -d`, copy `vault/test.md` into it, and record both files' SHA-256 hashes.
 
@@ -1003,7 +1003,7 @@ Expected: every suite passes.
 
 Wait until the `vault=vault` renderer exits, restore `vault/test.md` from the temporary copy, wait for delayed saves, and confirm that its hash and byte count still match the backup.
 
-- [ ] **Step 7: Review requirements and the final diff**
+- [x] **Step 7: Review requirements and the final diff**
 
 Confirm:
 
@@ -1015,11 +1015,11 @@ Confirm:
 - the branch does not own the release metadata changes from `codex/release-5.9.2`;
 - no warning suppression was added.
 
-- [ ] **Step 8: Record execution evidence**
+- [x] **Step 8: Record execution evidence**
 
 Mark Task 7 and Task 8 steps complete and append exact suite counts, build results, bundle-search results, fixture hashes, review findings, and any `AGENTS.md` change to this plan.
 
-- [ ] **Step 9: Commit the verified implementation**
+- [x] **Step 9: Commit the verified implementation**
 
 Use `but diff` to select only this task's changes, then commit them to `codex/obsidian-review-recommendations` with:
 
@@ -1033,6 +1033,22 @@ What:
 Use scoped selector specificity, keep System Information clipboard-free, rename the operation executor, and guard the resulting source and bundle policies with tests.
 ```
 
-- [ ] **Step 10: Inspect the returned GitButler workspace state**
+- [x] **Step 10: Inspect the returned GitButler workspace state**
 
 Expected: `codex/obsidian-review-recommendations` owns the design, plan, tests, CSS, System Information, executor rename, and related documentation only.
+
+Execution evidence:
+
+- Source policy RED: three tests failed for the expected CSS, clipboard, and `eval()` signatures before production changes.
+- Incremental GREEN: the CSS-only and clipboard-only checks each passed after their corresponding minimal change.
+- Focused GREEN: `reviewSourcePolicies.test.ts` and `OperationPerformer.test.ts` passed eight of eight tests.
+- Unit tests: 48 suites and 441 tests passed.
+- Formatting and lint: `npm run lint` passed with zero ESLint warnings.
+- TypeScript: `npx tsc --noEmit --pretty false` exited zero.
+- Production build: Rollup completed, and the generated `dist/main.js` contained zero Clipboard API, `eval()`-shaped, or dynamic function-constructor signatures.
+- Test build: Rollup completed with `ObsidianBulletPluginWithTests.ts` as the entry point.
+- Full integration: 67 suites passed, with 556 tests passed and 14 skipped.
+- Fixture protection: `vault/test.md` was restored after the `vault=vault` renderer exited; after the delayed-save window it remained 4588 bytes with SHA-256 `3b41a8cfcfc20a345fa3b2d33a909f1fb00bdd00d2302223bedefc0ed9c96f0b`, identical to the backup.
+- Task review: spec compliance and code quality were approved with no Critical, Important, or Minor findings.
+- Review note: Jest emitted an existing Watchman recrawl warning; the reviewer classified it as environmental noise because all commands returned explicit successful results.
+- `AGENTS.md`: no durable instruction was missing, so it was not changed.

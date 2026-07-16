@@ -39,7 +39,7 @@ const perform = jest.fn().mockReturnValue({
   shouldUpdate: true,
   shouldStopPropagation: true,
 });
-const result = performer.eval(root, { perform }, editor);
+const result = performer.execute(root, { perform }, editor);
 expect(perform).toHaveBeenCalledTimes(1);
 expect(changesApplicator.apply).toHaveBeenCalledWith(editor, expect.anything(), root);
 expect(result).toEqual({ shouldUpdate: true, shouldStopPropagation: true });
