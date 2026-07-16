@@ -38,7 +38,11 @@
 
 コントロールの横幅は48pxとし、行の高さ全体をタップ領域にする。
 
-折りたたみ可能な行だけ本文の右側へ同じ48pxの余白を確保し、長い本文とコントロールが重ならないようにする。
+48px幅のコントロール全体をリスト行右端から35px外側へ出し、中心のシェブロンを右端から11px外側へ置く。
+
+この位置は、内容領域左端から約11px外側にあるPropertiesなどのnativeシェブロンを左右反転した位置である。
+
+コントロールのうち行内に残る13pxだけを本文の右側余白として確保し、長い本文と操作領域が重ならないようにする。
 
 タップ時はObsidian標準のシェブロンと同じ処理を使い、その行の子孫全体を開閉する。
 
@@ -88,7 +92,7 @@ body classの管理には既存の`DocumentBodyClass`を再利用する。
 
 CSSはbody class配下の`.markdown-source-view.mod-cm6 .HyperMD-list-line`へ限定する。
 
-`.cm-line`はObsidianが`position: relative`にしているため、`.cm-fold-indicator`を`position: static`へ変更し、内側のnative `.collapse-indicator`をリスト行の右端へabsolute配置する。
+`.cm-line`はObsidianが`position: relative`にしているため、`.cm-fold-indicator`を`position: static`へ変更し、内側のnative `.collapse-indicator`を`inset-inline-end: -35px`で配置する。
 
 独自DOM、decoration、overlay、画面座標の測定、native transactionの置換は追加しない。
 
@@ -122,7 +126,7 @@ native interactionのunit testでは、mobile body class内のlist controlだけ
 
 native transactionのunit testでは、clickとnative dispatchの間にmicrotaskがあっても、補正済みsnapshotがfoldとunfoldの各transactionへ追加されることを確認する。
 
-CSS contract testでは、Live Previewのlist lineだけを対象にすること、native indicatorを右端へ配置すること、48pxの操作領域と本文余白を確保すること、折りたたみ中を左向きにすること、縦線機能の非表示指定を上書きすることを確認する。
+CSS contract testでは、Live Previewのlist lineだけを対象にすること、native indicatorを行の右端から35px外側へ配置すること、48pxの操作領域と13pxの本文余白を確保すること、折りたたみ中を左向きにすること、縦線機能の非表示指定を上書きすることを確認する。
 
 既存のunit test、lint、型検査、build、full testを実行する。
 
@@ -138,7 +142,7 @@ clicked rowはviewport上端から100px、160px、400pxに置き、child数とbr
 
 ## 完了条件
 
-- モバイルのLive Previewで、折りたたみ可能な各リスト行の右端に一つだけコントロールが表示される。
+- モバイルのLive Previewで、折りたたみ可能な各リスト行の右端から35px外側に一つだけコントロールが表示される。
 - 展開中は下向き、折りたたみ中は左向きになる。
 - 右端のコントロールがObsidian標準と同じ単一リスト折りたたみ動作を行う。
 - 長い本文がコントロールと重ならない。

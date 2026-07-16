@@ -56,7 +56,7 @@
 - Produces: a 48px-wide, row-height target whose center is 11px outside the list line.
 - Produces: a 13px inline-end row reserve that ends exactly where the shifted target begins.
 
-- [ ] **Step 1: Write the failing CSS contract**
+- [x] **Step 1: Write the failing CSS contract**
 
 Replace the existing CSS contract test with:
 
@@ -99,7 +99,7 @@ test("mirrors native mobile list fold controls beyond the right edge", () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -111,7 +111,7 @@ SKIP_OBSIDIAN=1 npx jest \
 
 Expected: FAIL because the stylesheet still contains `padding-inline-end: 48px` and `inset-inline-end: 0`.
 
-- [ ] **Step 3: Implement the minimal CSS change**
+- [x] **Step 3: Implement the minimal CSS change**
 
 Change only these declarations in `styles.css`:
 
@@ -143,7 +143,7 @@ Change only these declarations in `styles.css`:
 }
 ```
 
-- [ ] **Step 4: Update the durable documentation**
+- [x] **Step 4: Update the durable documentation**
 
 In `docs/superpowers/specs/2026-07-16-mobile-right-fold-controls-design.md`, replace the geometry paragraphs with:
 
@@ -181,7 +181,7 @@ Replace the first mobile-control rule in `AGENTS.md` with:
     - Obsidian 1.13 系の Live Preview は、非activeかつ非taskのリスト行に対して詳細度の高いselectorでnative `.collapse-indicator`へ `padding-inline-end: var(--list-bullet-end-padding)` と負の `inset-inline-end` を適用します。右側へ移動するときは `.markdown-source-view.mod-cm6.is-live-preview .cm-line.HyperMD-list-line` まで対象を限定し、同等以上の詳細度でnativeの`padding-inline-end`を0へ戻してください。48px幅の操作領域全体を`inset-inline-end: -35px`で移動し、行の`padding-inline-end`は行内に残る13pxにしてください。検証ではcontrol右端がlist行右端から35px外側、control左端が13px内側、シェブロン中心が約11px外側にあることを実座標で確認してください。
 ```
 
-- [ ] **Step 5: Run focused static verification**
+- [x] **Step 5: Run focused static verification**
 
 Run:
 
@@ -196,8 +196,8 @@ npx prettier --check \
   docs/superpowers/specs/2026-07-16-mobile-right-fold-controls-design.md \
   docs/superpowers/specs/2026-07-17-mobile-fold-control-edge-alignment-design.md \
   docs/superpowers/plans/2026-07-16-mobile-right-fold-controls.md \
-  docs/superpowers/plans/2026-07-17-mobile-fold-control-edge-alignment.md \
-  AGENTS.md
+  docs/superpowers/plans/2026-07-17-mobile-fold-control-edge-alignment.md
+npx prettier --check AGENTS.md --tab-width 4
 npm run lint
 npx tsc --noEmit
 ```
@@ -220,7 +220,7 @@ Expected: every command exits 0.
 - Consumes: the CSS contract from Task 1.
 - Produces: measured native geometry, touch interaction evidence, and a landed GitButler branch.
 
-- [ ] **Step 1: Run the complete automated verification**
+- [x] **Step 1: Run the complete automated verification**
 
 Run:
 
@@ -233,7 +233,7 @@ npm run build-with-tests
 
 Expected: every command exits 0 and `dist/main.js` contains the test build.
 
-- [ ] **Step 2: Back up the full-test fixture**
+- [x] **Step 2: Back up the full-test fixture**
 
 Run:
 
@@ -247,7 +247,7 @@ echo "$backup_hash"
 
 Expected: the command prints a backup directory outside the vault and one SHA-256 hash.
 
-- [ ] **Step 3: Run the full suite and production build**
+- [x] **Step 3: Run the full suite and production build**
 
 Run:
 
@@ -258,7 +258,7 @@ npm run build
 
 Expected: the full Jest suite and production Rollup build exit 0.
 
-- [ ] **Step 4: Restore the fixture safely**
+- [x] **Step 4: Restore the fixture safely**
 
 Run:
 
@@ -277,7 +277,7 @@ test "$backup_hash" = "$restored_hash"
 
 Expected: the command exits 0 after the renderer stops and the restored hash matches the backup.
 
-- [ ] **Step 5: Install the production plugin and create the fixture**
+- [x] **Step 5: Install the production plugin and create the fixture**
 
 Run:
 
@@ -294,7 +294,7 @@ obsidian-cli vault=vault eval code='window.focus(); document.title'
 
 Expected: the title contains `mobile-fold-control-edge-alignment - vault` and does not contain `base`.
 
-- [ ] **Step 6: Enable real mobile emulation**
+- [x] **Step 6: Enable real mobile emulation**
 
 Run:
 
@@ -323,7 +323,7 @@ obsidian-cli vault=vault eval code='window.focus(); document.title'
 
 Stop if the fresh title does not contain `vault` or contains `base`.
 
-- [ ] **Step 7: Measure the mirrored geometry**
+- [x] **Step 7: Measure the mirrored geometry**
 
 Run:
 
@@ -344,7 +344,7 @@ Expected:
 - `visibility` is `visible`;
 - `pointerEvents` is `auto`.
 
-- [ ] **Step 8: Verify touch folding and scroll anchoring**
+- [x] **Step 8: Verify touch folding and scroll anchoring**
 
 For each viewport-top offset below, position a foldable row at that screen Y coordinate, record its bounding-rect top and the editor `scrollTop`, then tap the visible chevron through touch emulation:
 

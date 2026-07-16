@@ -1,5 +1,7 @@
 # Mobile Right Fold Controls Implementation Plan
 
+> **Geometry revision:** The final positioning requirements are superseded by `docs/superpowers/specs/2026-07-17-mobile-fold-control-edge-alignment-design.md` and `docs/superpowers/plans/2026-07-17-mobile-fold-control-edge-alignment.md`. Historical 48px row padding and zero-inset snippets below describe the original implementation, not the current target geometry.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Move each native fold control to the right edge of its foldable list row in mobile Live Preview, behind a default-on setting that users can disable.
