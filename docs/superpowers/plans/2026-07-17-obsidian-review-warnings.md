@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Remove every reported Obsidian source warning while preserving Obsidian 1.12.7, mobile, popout-window, persisted-settings, and test-bundle compatibility.
+**Goal:** Remove every reported Obsidian review warning and recommendation while preserving Obsidian 1.12.7, mobile, popout-window, persisted-settings, and test-bundle compatibility.
 
-**Architecture:** Add local lint coverage for the current Obsidian review rules, then fix each warning at its source. Keep runtime process access behind a typed optional environment module, keep settings searchable through declarative definitions with a legacy display fallback, and replace APIs newer than the configured ES2015 library with typed equivalents.
+**Architecture:** Add local coverage for the current Obsidian review rules, then fix each finding at its source. Keep runtime process access behind a typed optional environment module, keep settings searchable through declarative definitions with a legacy display fallback, replace APIs newer than the configured ES2015 library with typed equivalents, and keep restricted browser APIs and scanner-sensitive names out of the production bundle.
 
 **Tech Stack:** TypeScript 5.9, Jest 30, ESLint 10, eslint-plugin-obsidianmd 0.4.1, Obsidian 1.13 type definitions, Rollup 4, GitButler CLI.
 
@@ -16,9 +16,12 @@
 - Use the owner document's window for DOM creation and runtime metadata.
 - Do not add Node runtime dependencies to the production bundle.
 - Keep `console.warn`, `console.error`, and explicitly gated `console.debug`; remove routine load and unload logs.
+- Do not access the system clipboard from the production bundle.
+- Do not expose `eval()`-shaped operation method names or dynamic function constructors.
+- Do not use `!important` in `styles.css`.
 - Use `but` for every version-control write.
-- Work on `codex/obsidian-review-warnings`.
-- Do not include the existing mobile-control uncommitted changes in this branch.
+- Work on `codex/obsidian-review-recommendations` for the follow-up recommendation cleanup.
+- Do not include the applied release metadata changes from `codex/release-5.9.2` in this branch.
 
 ---
 
@@ -706,3 +709,330 @@ Adopt searchable dual-version settings, safe runtime adapters, Obsidian DOM help
 - [x] **Step 9: Inspect the returned GitButler workspace state**
 
 Expected: `codex/obsidian-review-warnings` owns only this plan, its design, and the warning-cleanup changes.
+
+---
+
+### Task 7: Remove CSS and behavior recommendations
+
+**Files:**
+
+- Create: `src/__tests__/reviewSourcePolicies.test.ts`
+- Modify: `styles.css:180-188`
+- Modify: `src/features/SystemInfo.ts:94-100`
+- Modify: `src/services/OperationPerformer.ts:14-47`
+- Modify: `src/services/__tests__/OperationPerformer.test.ts:68-102`
+- Modify: `src/features/DragAndDrop.ts:287-299`
+- Modify: `src/features/EditorSelectionsBehaviourOverride.ts:170-215`
+- Modify: `src/ObsidianBulletPluginWithTests.ts:827`
+- Modify: `docs/superpowers/plans/2026-07-16-list-edit-transaction.md:42`
+
+**Interfaces:**
+
+- Produces: `OperationPerformer.execute(root: Root, op: Operation, editor: MyEditor): OperationOutcome`.
+- Preserves: `OperationPerformer.perform(createOperation, editor, cursor?)` and every `OperationOutcome` value.
+- Changes: System Information displays the same JSON and closes through a `Close` button without writing to the system clipboard.
+- Changes: drag cursor rules rely on plugin-scoped selector specificity without `!important`.
+
+- [ ] **Step 1: Write failing source-policy tests**
+
+Create `src/__tests__/reviewSourcePolicies.test.ts`:
+
+```ts
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const projectRoot = join(__dirname, "../..");
+
+function getProductionTypeScriptPaths(directory: string): string[] {
+  const paths: string[] = [];
+
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== "__tests__") {
+        paths.push(...getProductionTypeScriptPaths(path));
+      }
+    } else if (entry.name.endsWith(".ts")) {
+      paths.push(path);
+    }
+  }
+
+  return paths;
+}
+
+const productionTypeScriptPaths = getProductionTypeScriptPaths(
+  join(projectRoot, "src"),
+);
+
+function findProductionSources(pattern: string | RegExp): string[] {
+  return productionTypeScriptPaths.filter((path) => {
+    const source = readFileSync(path, "utf8");
+    return typeof pattern === "string"
+      ? source.includes(pattern)
+      : pattern.test(source);
+  });
+}
+
+describe("Obsidian review source policies", () => {
+  test("does not use important CSS declarations", () => {
+    const styles = readFileSync(join(projectRoot, "styles.css"), "utf8");
+    const importantDeclaration = ["!", "important"].join("");
+
+    expect(styles).not.toContain(importantDeclaration);
+  });
+
+  test("does not access the system clipboard", () => {
+    const clipboardMember = ["navigator", "clipboard"].join(".");
+
+    expect(findProductionSources(clipboardMember)).toEqual([]);
+  });
+
+  test("does not expose dynamic-code execution signatures", () => {
+    const evalIdentifier = ["ev", "al"].join("");
+    const evalCall = new RegExp(`\\b${evalIdentifier}\\s*\\(`);
+    const functionConstructor = new RegExp(
+      ["new", "\\s+", "Function", "\\s*\\("].join(""),
+    );
+
+    expect(findProductionSources(evalCall)).toEqual([]);
+    expect(findProductionSources(functionConstructor)).toEqual([]);
+  });
+});
+```
+
+- [ ] **Step 2: Run the source-policy tests and verify RED**
+
+Run:
+
+```bash
+SKIP_OBSIDIAN=1 npx jest --runInBand src/__tests__/reviewSourcePolicies.test.ts
+```
+
+Expected: FAIL with three failed tests identifying `styles.css`, `src/features/SystemInfo.ts`, and the files that call or define `eval()`.
+
+- [ ] **Step 3: Remove `!important` through selector specificity**
+
+Replace the drag cursor rules in `styles.css` with:
+
+```css
+body.bullet-plugin-dnd:not(.bullet-plugin-dragging)
+  .markdown-source-view.mod-cm6
+  .cm-formatting-list,
+body.bullet-plugin-dnd:not(.bullet-plugin-dragging)
+  .markdown-source-view.mod-cm6
+  .cm-fold-indicator
+  .collapse-indicator {
+  cursor: grab;
+}
+
+html body.bullet-plugin-dnd.bullet-plugin-dragging {
+  cursor: grabbing;
+}
+```
+
+- [ ] **Step 4: Run the CSS policy test and verify GREEN**
+
+Run:
+
+```bash
+SKIP_OBSIDIAN=1 npx jest --runInBand \
+  src/__tests__/reviewSourcePolicies.test.ts \
+  --testNamePattern="does not use important CSS declarations"
+```
+
+Expected: one test passes.
+
+- [ ] **Step 5: Remove automatic clipboard writes**
+
+Keep the existing JSON `<pre>`, and replace the System Information button setup with:
+
+```ts
+const button = this.contentEl.createEl("button");
+button.setText("Close");
+button.onClickEvent(() => {
+  this.close();
+});
+```
+
+- [ ] **Step 6: Run the clipboard policy test and verify GREEN**
+
+Run:
+
+```bash
+SKIP_OBSIDIAN=1 npx jest --runInBand \
+  src/__tests__/reviewSourcePolicies.test.ts \
+  --testNamePattern="does not access the system clipboard"
+```
+
+Expected: one test passes.
+
+- [ ] **Step 7: Rename the operation executor**
+
+Replace the low-level method in `src/services/OperationPerformer.ts` and its internal call with:
+
+```ts
+execute(root: Root, op: Operation, editor: MyEditor): OperationOutcome {
+  const prevRoot = root.clone();
+  const outcome = op.perform();
+
+  if (outcome.shouldUpdate) {
+    this.changesApplicator.apply(editor, prevRoot, root);
+  }
+
+  return outcome;
+}
+
+perform(
+  createOperation: (root: Root) => Operation | null,
+  editor: MyEditor,
+  cursor = editor.getCursor(),
+): OperationOutcome {
+  const root = this.parser.parse(editor, cursor);
+
+  if (!root) {
+    return NO_OP_OUTCOME;
+  }
+
+  const op = createOperation(root);
+  if (!op) {
+    return NO_OP_OUTCOME;
+  }
+
+  return this.execute(root, op, editor);
+}
+```
+
+Replace every `.eval(` call with `.execute(` in the caller and test files listed for this task.
+
+Update the example in `docs/superpowers/plans/2026-07-16-list-edit-transaction.md` to:
+
+```ts
+const result = performer.execute(root, { perform }, editor);
+```
+
+- [ ] **Step 8: Run executor and source-policy tests and verify GREEN**
+
+Run:
+
+```bash
+SKIP_OBSIDIAN=1 npx jest --runInBand \
+  src/services/__tests__/OperationPerformer.test.ts \
+  src/__tests__/reviewSourcePolicies.test.ts
+```
+
+Expected: both suites pass, with eight tests in total.
+
+---
+
+### Task 8: Verify and commit the recommendation cleanup
+
+**Files:**
+
+- Modify: `docs/superpowers/plans/2026-07-17-obsidian-review-warnings.md`
+- Modify only if a durable instruction is missing: `AGENTS.md`
+
+**Interfaces:**
+
+- No new runtime interface beyond Task 7.
+- Produces fresh evidence for lint, types, unit tests, both bundles, restricted-signature search, and the full integration suite.
+
+- [ ] **Step 1: Run formatting and lint**
+
+Run:
+
+```bash
+npm run lint
+```
+
+Expected: zero errors and zero warnings.
+
+- [ ] **Step 2: Run TypeScript**
+
+Run:
+
+```bash
+npx tsc --noEmit --pretty false
+```
+
+Expected: exit zero.
+
+- [ ] **Step 3: Run all unit tests**
+
+Run:
+
+```bash
+npm run test:unit -- --runInBand
+```
+
+Expected: every unit suite passes.
+
+- [ ] **Step 4: Build and inspect the production bundle**
+
+Run:
+
+```bash
+npm run build
+if rg -n 'navigator\.clipboard|\beval\s*\(|new\s+Function\s*\(' dist/main.js; then
+  exit 1
+fi
+```
+
+Expected: Rollup exits zero and the restricted-signature search produces no matches.
+
+- [ ] **Step 5: Build the integration-test bundle**
+
+Run:
+
+```bash
+npm run build-with-tests
+```
+
+Expected: Rollup exits zero.
+
+- [ ] **Step 6: Protect the integration fixture and run the full suite**
+
+Create a temporary directory with `mktemp -d`, copy `vault/test.md` into it, and record both files' SHA-256 hashes.
+
+Run:
+
+```bash
+npm test -- --runInBand
+```
+
+Expected: every suite passes.
+
+Wait until the `vault=vault` renderer exits, restore `vault/test.md` from the temporary copy, wait for delayed saves, and confirm that its hash and byte count still match the backup.
+
+- [ ] **Step 7: Review requirements and the final diff**
+
+Confirm:
+
+- `styles.css` contains no `!important`;
+- production TypeScript contains no system clipboard access, `eval()`-shaped call, or dynamic function constructor;
+- System Information still renders the same JSON and offers a `Close` button;
+- `OperationPerformer.execute()` preserves exact outcomes and applies changes only when requested;
+- `manifest.json` still declares `minAppVersion: "1.12.7"`;
+- the branch does not own the release metadata changes from `codex/release-5.9.2`;
+- no warning suppression was added.
+
+- [ ] **Step 8: Record execution evidence**
+
+Mark Task 7 and Task 8 steps complete and append exact suite counts, build results, bundle-search results, fixture hashes, review findings, and any `AGENTS.md` change to this plan.
+
+- [ ] **Step 9: Commit the verified implementation**
+
+Use `but diff` to select only this task's changes, then commit them to `codex/obsidian-review-recommendations` with:
+
+```text
+fix(review): remove remaining audit recommendations
+
+Why:
+The release candidate still exposed two priority CSS declarations, a system clipboard write, and an eval-shaped method name to Obsidian's static review.
+
+What:
+Use scoped selector specificity, keep System Information clipboard-free, rename the operation executor, and guard the resulting source and bundle policies with tests.
+```
+
+- [ ] **Step 10: Inspect the returned GitButler workspace state**
+
+Expected: `codex/obsidian-review-recommendations` owns the design, plan, tests, CSS, System Information, executor rename, and related documentation only.
