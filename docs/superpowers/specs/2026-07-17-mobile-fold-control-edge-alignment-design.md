@@ -1,0 +1,76 @@
+# モバイル折りたたみコントロールの端寄せ設計
+
+## 目的
+
+モバイルのLive Previewで右側へ移したリストのシェブロンは、48px幅の操作領域の中央にあるため、アイコン本体がリスト行の右端から24px内側に見える。
+
+Propertiesなどの左側にあるnativeシェブロンは、内容領域の左端からアイコン中心が約11px外側にある。
+
+右側のリストシェブロンも、内容領域を基準として左右反転した位置へ移す。
+
+## 配置
+
+native `.collapse-indicator`の横幅は48pxのまま維持する。
+
+縦幅は48pxへ固定せず、そのリスト行の高さ全体を使う。
+
+連続する通常行は約26pxの高さしかないため、48px四方へ広げると上下の操作領域が重なる。
+
+コントロール全体を現在の位置から35px右へ移し、`inset-inline-end`を`-35px`にする。
+
+この配置では、48px幅の中心にあるシェブロンがリスト行右端から11px外側へ出る。
+
+左側のnativeシェブロンも内容領域左端から中心が約11px外側にあるため、両者は内容領域を基準として左右対称になる。
+
+コントロールのうちリスト行内に残る幅は13pxである。
+
+折りたたみ可能な行の`padding-inline-end`も48pxから13pxへ変更し、本文と操作領域が重ならない範囲で本文幅を戻す。
+
+## 操作
+
+シェブロンのSVGだけを動かさず、native `.collapse-indicator`の操作領域全体を移動する。
+
+見えているアイコンとpointer targetの中心を一致させる。
+
+native pointer event、fold transaction、scroll snapshot、展開時と折りたたみ時の向きは変更しない。
+
+デスクトップ、閲覧モード、見出しのシェブロンには適用しない。
+
+## 実装
+
+`styles.css`のモバイル右端コントロール規則だけを変更する。
+
+Obsidianの高詳細度selectorを上書きする現在のselectorは維持し、`padding-inline-end: 0`も維持する。
+
+プラグイン独自のDOM、decoration、overlay、座標測定は追加しない。
+
+既存の設計書と`AGENTS.md`にある「indicator右端とlist行右端の差を0にする」という条件は、新しい配置へ更新する。
+
+## テスト
+
+CSS contract testでは次を確認する。
+
+- 折りたたみ可能な行の`padding-inline-end`が13pxである。
+- native controlの`inset-inline-end`が`-35px`である。
+- controlの横幅が48px、縦幅が行全体である。
+- アイコンだけを動かす追加transformがない。
+- Live Previewのlist lineだけが対象である。
+
+実Obsidianではモバイルemulation、390px幅、DPR 3、touch emulationを有効にし、次の実座標を確認する。
+
+- controlの横幅が48pxである。
+- control右端がlist行右端から35px外側にある。
+- control左端がlist行右端から13px内側にある。
+- listシェブロン中心がlist行右端から約11px外側にある。
+- Propertiesのnativeシェブロン中心が内容領域左端から外側にある距離と、listシェブロンの距離がほぼ一致する。
+- 長い本文が操作領域と重ならない。
+
+pointer tapでは既存の検証条件を維持し、foldとunfoldの両方でclicked rowの画面上Y座標差と`scrollTop`差が0であることを確認する。
+
+## 完了条件
+
+- モバイルのlistシェブロンが、左側のnativeヘッダーシェブロンを左右反転した位置に見える。
+- 48px幅の操作領域とシェブロンが一体で移動する。
+- 隣接する行の操作領域が上下に重ならない。
+- 本文と操作領域が重ならない。
+- native foldingとscroll anchoringに回帰がない。
