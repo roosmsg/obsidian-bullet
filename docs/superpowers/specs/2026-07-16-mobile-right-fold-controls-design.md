@@ -50,7 +50,11 @@ native fold transactionは置き換えず、preventまたはstopしない。
 
 ObsidianはMarkdown editorを開いた後にCodeMirrorの下端余白を`100px`へ上書きするため、そのままbranchを閉じると最大`scrollTop`へclampされる。
 
-折りたたみ済みbranchを開く場合は、下端基準のscroll anchoringによってclicked bulletがviewport外へ移動する。
+ただし、下端余白の復元だけではモバイルの上端付近を固定できない。
+
+CodeMirrorはnative fold transactionでviewport anchorを自動選択する。
+
+clicked bulletがmobile header付近にある場合、その直下のchildがanchorになり、foldによってanchor自体が消えるためclicked bulletが下へ移動する。
 
 mobile controlの`pointerdown` capture時に、実DOMの下端余白がCodeMirror標準の計算値より小さい場合だけ復元する。
 
@@ -60,7 +64,13 @@ mobile controlの`pointerdown` capture時に、実DOMの下端余白がCodeMirro
 
 `click` captureでも同じ準備を行い、keyboardまたはprogrammatic clickのfallbackとする。
 
-この準備処理はnative clickを消費せず、独自のfold effect、scroll snapshot、手動の`scrollTop`復元、遅延補正を追加しない。
+`click` captureでは、実viewport上端へanchorを補正した`scrollSnapshot()`も準備する。
+
+Obsidianのnative handlerはclick後のmicrotaskでfoldをdispatchするため、pending snapshotはmicrotaskを越えて保持する。
+
+CodeMirrorのtransaction extenderは、次のnative `foldEffect`または`unfoldEffect`と同じtransactionへpending snapshotを追加する。
+
+この処理はnative clickを消費せず、独自のfold effect、手動の`scrollTop`復元、遅延したscroll補正を追加しない。
 
 ## 実装構成
 
@@ -72,7 +82,9 @@ body classの管理には既存の`DocumentBodyClass`を再利用する。
 
 同じFeatureがCodeMirror ViewPluginを登録し、mobile body class配下のnative list controlに対する`pointerdown`と`click`をcapture phaseで観測する。
 
-下端余白の計算と復元は、縦線操作とmobile controlが共有する`FoldScroll` moduleへ置く。
+同じFeatureはtransaction extenderも登録し、native fold transactionへpending snapshotを追加する。
+
+下端余白の計算、実viewport上端へのanchor補正、物理pixel単位へのmargin正規化は、縦線操作とmobile controlが共有する`FoldScroll` moduleへ置く。
 
 CSSはbody class配下の`.markdown-source-view.mod-cm6 .HyperMD-list-line`へ限定する。
 
@@ -108,13 +120,21 @@ Featureのunit testでは、モバイルでのbody class追加、設定を無効
 
 native interactionのunit testでは、mobile body class内のlist controlだけが`pointerdown`時に不足した下端余白を復元すること、layoutを確定すること、eventを消費しないこと、destroy時にlistenerを解除することを確認する。
 
+native transactionのunit testでは、clickとnative dispatchの間にmicrotaskがあっても、補正済みsnapshotがfoldとunfoldの各transactionへ追加されることを確認する。
+
 CSS contract testでは、Live Previewのlist lineだけを対象にすること、native indicatorを右端へ配置すること、48pxの操作領域と本文余白を確保すること、折りたたみ中を左向きにすること、縦線機能の非表示指定を上書きすることを確認する。
 
 既存のunit test、lint、型検査、build、full testを実行する。
 
-実Obsidianではリポジトリ内の`vault`だけを使い、モバイルbody classを一時的に再現して展開中と折りたたみ中の位置、向き、タップ動作、長い行の折り返し、縦線設定との組み合わせを確認する。
+実Obsidianではリポジトリ内の`vault`だけを使い、DevTools Console相当から`app.emulateMobile(true)`を実行する。
+
+続けてDevice Toolbar相当でviewport、DPR、touch emulationを設定し、`pointerType="touch"`のtapで展開中と折りたたみ中の位置、向き、タップ動作、長い行の折り返し、縦線設定との組み合わせを確認する。
+
+mobile body classを手動で付けるだけの検証は、Obsidian内部のmobile behaviorを再現しないため完了条件に使わない。
 
 文末の長いbranchでは、実DOMの下端余白を`100px`へ戻してから`pointerdown`、`pointerup`、`click`を実行し、foldとunfoldの両方でclicked rowの画面上Y座標差と`scrollTop`差が0であることを確認する。
+
+clicked rowはviewport上端から100px、160px、400pxに置き、child数とbranch後続行の有無を変えて確認する。
 
 ## 完了条件
 

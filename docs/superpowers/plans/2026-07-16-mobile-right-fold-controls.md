@@ -877,6 +877,89 @@ Expected: commit succeeds and the worktree is clean.
 
 ---
 
+### Task 4b: Correct mobile viewport anchoring
+
+**Files:**
+
+- Modify: `src/features/FoldScroll.ts`
+- Modify: `src/features/GuideFolding.ts`
+- Modify: `src/features/MobileRightFoldControls.ts`
+- Modify: `src/features/__tests__/MobileRightFoldControls.test.ts`
+- Modify: `docs/superpowers/specs/2026-07-16-mobile-right-fold-controls-design.md`
+- Modify: `AGENTS.md`
+
+**Root cause:**
+
+`app.emulateMobile(true)`とtouch emulationを有効にすると、clicked rowがmobile header付近にある場合、CodeMirrorの自動viewport anchorがfold対象のchild内へ置かれる。
+
+native foldによってそのanchorが消えると、clicked rowがanchorの位置まで下へ移動する。
+
+下端余白はCodeMirror標準値へ復元済みであり、fold後の最大`scrollTop`にも余裕があるため、clampがこの再現の原因ではない。
+
+- [x] **Step 1: Lock the asynchronous native transaction order**
+
+`MobileNativeFoldScroll`へ補正済みsnapshot factoryを注入し、`prepare()`後にmicrotaskを1回通してから`foldEffect`または`unfoldEffect`をdispatchするtestを書く。
+
+snapshotが同じtransactionへ追加されることをassertする。
+
+- [x] **Step 2: Verify RED**
+
+```bash
+SKIP_OBSIDIAN=1 npx jest \
+  src/features/__tests__/MobileRightFoldControls.test.ts \
+  --runInBand
+```
+
+Expected: pending snapshotがmicrotaskで早く削除され、foldとunfoldの両testがFAILする。
+
+- [x] **Step 3: Share the corrected snapshot**
+
+`GuideFolding`のviewport上端補正と物理pixel正規化を`stableFoldScrollSnapshot()`として`FoldScroll`へ移す。
+
+縦線操作は共有関数を使い、既存transaction構成を維持する。
+
+- [x] **Step 4: Extend the native transaction**
+
+`MobileNativeFoldScroll`を追加し、click captureで補正済みsnapshotをpendingにする。
+
+pending snapshotは次のmacrotaskで破棄し、Obsidianがclick後のmicrotaskでdispatchするnative foldを待てるようにする。
+
+CodeMirrorのtransaction extenderで、pending snapshotを次の`foldEffect`または`unfoldEffect`と同じtransactionへ追加する。
+
+- [x] **Step 5: Verify GREEN**
+
+```bash
+SKIP_OBSIDIAN=1 npx jest \
+  src/features/__tests__/MobileRightFoldControls.test.ts \
+  src/features/__tests__/GuideFolding.test.ts \
+  --runInBand
+npm run lint
+npx tsc --noEmit
+```
+
+Expected: every command exits 0.
+
+- [x] **Step 6: Verify with real mobile emulation**
+
+test vaultのDevTools Console相当で次を実行する。
+
+```js
+app.emulateMobile(true);
+```
+
+Device Toolbar相当で390×844、DPR 3、5点touchを設定し、CDPの`Input.dispatchTouchEvent`でnative controlをtapする。
+
+clicked rowをviewport上端から100px、160px、400pxへ置き、child数20件と80件、branch後続行0件と40件を確認する。
+
+foldとunfoldの全組み合わせで次をassertする。
+
+```text
+deltaTop = 0
+deltaScroll = 0
+```
+
+---
+
 ### Task 5: Verify the complete behavior and push
 
 **Files:**
