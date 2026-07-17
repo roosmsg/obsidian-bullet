@@ -34,7 +34,7 @@
 - Consumes: `MobileNativeFoldScroll.prepare(view: EditorView): void`、`MobileNativeFoldScroll.extension: Extension`
 - Produces: `PendingFoldScrollSnapshot`、同じevent turn内の非fold transactionを通過し、最初の明示的またはimplicitなfold/unfoldで消費されるsnapshot lifecycle
 
-- [ ] **Step 1: 中間selection transactionの回帰testを書く**
+- [x] **Step 1: 中間selection transactionの回帰testを書く**
 
 `src/features/__tests__/MobileRightFoldControls.test.ts`の既存`MobileNativeFoldScroll` table testの後へ、実際の`EditorState.update()`を連結するtestを追加する。
 
@@ -80,7 +80,7 @@ test.each([
 );
 ```
 
-- [ ] **Step 2: testがstate-key不一致で失敗することを確認する**
+- [x] **Step 2: testがstate-key不一致で失敗することを確認する**
 
 Run:
 
@@ -90,7 +90,7 @@ npx -y -p node@22.23.1 -c 'node --version && SKIP_OBSIDIAN=1 ./node_modules/.bin
 
 Expected: 新しいfold/unfoldの2 caseが`Expected length: 2, Received length: 1`でFAILし、既存testはPASSする。
 
-- [ ] **Step 3: pending objectを後続stateへ引き継ぐ最小実装を書く**
+- [x] **Step 3: pending objectを後続stateへ引き継ぐ最小実装を書く**
 
 `src/features/MobileRightFoldControls.ts`でsnapshotのvalue型を次のobjectへ変更する。
 
@@ -171,7 +171,7 @@ export class MobileNativeFoldScroll {
 }
 ```
 
-- [ ] **Step 4: targeted testが通ることを確認する**
+- [x] **Step 4: targeted testが通ることを確認する**
 
 Run:
 
@@ -181,7 +181,7 @@ npx -y -p node@22.23.1 -c 'node --version && SKIP_OBSIDIAN=1 ./node_modules/.bin
 
 Expected: `MobileRightFoldControls.test.ts`の全testがPASSする。
 
-- [ ] **Step 5: 同一selection transactionによるimplicit unfoldの回帰testを書く**
+- [x] **Step 5: 同一selection transactionによるimplicit unfoldの回帰testを書く**
 
 `codeFolding()`でカーソルをfold内に残したstateを作り、同一selectionの再設定だけでfolded rangeが解除されるcaseを追加する。
 
@@ -222,7 +222,7 @@ test("keeps a corrected scroll snapshot when moving the selection implicitly unf
 
 Expected: 明示的な`unfoldEffect`がないselection transactionへsnapshotが追加される。
 
-- [ ] **Step 6: timeout後にsnapshotが流用されない回帰testを書く**
+- [x] **Step 6: timeout後にsnapshotが流用されない回帰testを書く**
 
 同じtest fileへ、timeout callbackを明示的に実行するtestを追加する。
 
@@ -275,7 +275,7 @@ test.each([
 );
 ```
 
-- [ ] **Step 7: lifecycle testと関連unit testを実行する**
+- [x] **Step 7: lifecycle testと関連unit testを実行する**
 
 Run:
 
@@ -285,7 +285,7 @@ npx -y -p node@22.23.1 -c 'node --version && SKIP_OBSIDIAN=1 ./node_modules/.bin
 
 Expected: 両test suiteがPASSし、console errorまたはwarningが出ない。
 
-- [ ] **Step 8: durableなtransaction順序をAGENTS.mdへ記録する**
+- [x] **Step 8: durableなtransaction順序をAGENTS.mdへ記録する**
 
 `AGENTS.md`の「モバイルの右端折りたたみコントロールについて」へ次を追加する。
 
@@ -293,7 +293,7 @@ Expected: 両test suiteがPASSし、console errorまたはwarningが出ない。
 - mobile native chevronの`click` captureとnative fold transactionの間には、カーソル由来のselection-only transactionが入る場合があります。pending scroll snapshotをclick時点の`EditorState`へ固定せず、同じevent turnの後続`EditorState`へ引き継いでください。カーソルがfold内にある場合、そのselection transaction自体が明示的な`unfoldEffect`なしでfolded rangeを解除するため、最初の`foldEffect`、`unfoldEffect`、または`foldedRanges(startState)`と`foldedRanges(state)`の実内容が変わるtransactionでsnapshotを消費してください。`setTimeout(..., 0)`後は無効化し、`prepare()`→selection transaction→native fold/unfoldの順序をunit testと実Obsidianで確認してください。
 ```
 
-- [ ] **Step 9: format、型検査、lintを実行する**
+- [x] **Step 9: format、型検査、lintを実行する**
 
 Run:
 
@@ -303,7 +303,7 @@ npx -y -p node@22.23.1 -c 'node --version && ./node_modules/.bin/prettier --writ
 
 Expected: Node.jsは22.23.1、Prettier変更後にtypecheckとlintがexit 0。
 
-- [ ] **Step 10: 実装差分だけをGitButler branchへcommitする**
+- [x] **Step 10: 実装差分だけをGitButler branchへcommitする**
 
 Run:
 
@@ -335,7 +335,7 @@ Expected: GitButlerの`codex/fix-mobile-heading-selection-jank`上にsource、te
 - Consumes: Task 1の`MobileNativeFoldScroll` lifecycle
 - Produces: 中間selection transactionあり・なしのnative touch fold/unfold計測結果
 
-- [ ] **Step 1: test bundleをbuildしてtest vaultへ配置する**
+- [x] **Step 1: test bundleをbuildしてtest vaultへ配置する**
 
 Run:
 
@@ -347,7 +347,7 @@ cp dist/main.js manifest.json styles.css vault/.obsidian/plugins/bullet/
 
 Expected: buildがexit 0になり、`dist/main.js`、`manifest.json`、`styles.css`がplugin ID `bullet`へ配置される。
 
-- [ ] **Step 2: test vaultを開いて対象windowを確認する**
+- [x] **Step 2: test vaultを開いて対象windowを確認する**
 
 Obsidian CLIで`vault=vault`を明示してtest vaultを開き、各UI action直前に次を実行する。
 
@@ -357,13 +357,13 @@ obsidian-cli vault=vault eval code='window.focus()'
 
 Expected: window titleが`vault`を示す。`base`が表示された場合は操作を止める。
 
-- [ ] **Step 3: 最小fixtureとモバイル環境を準備する**
+- [x] **Step 3: 最小fixtureとモバイル環境を準備する**
 
 `vault/mobile-heading-cursor-jank-repro.md`へ、対象見出し、一つの子段落、次の見出しを置く。DevTools Console相当から`app.emulateMobile(true)`を実行し、viewport 390×844px、DPR 3、5点touch emulationを設定する。対象見出しをviewport上端から160pxへ置き、子段落内へカーソルを置く。
 
 Expected: tap直前の`elementFromPoint()`が対象のnative heading controlを返す。
 
-- [ ] **Step 4: 中間selection transactionありでfoldとunfoldを計測する**
+- [x] **Step 4: 中間selection transactionありでfoldとunfoldを計測する**
 
 pluginのcapture listenerより後、native handlerより前に同一selectionをdispatchする診断用capture listenerを追加する。CDPのnative touch gestureで`pointerdown`→`pointerup`→`click`を発生させ、各animation frameの見出しY座標、`scrollTop`、fold状態、selection headを記録する。
 
@@ -376,7 +376,7 @@ Expected:
 
 実績: foldとunfoldを各36 frame計測し、両spanが0px、selection headが344のまま、fold状態が反転した。
 
-- [ ] **Step 5: 診断用listenerなしの対照を計測する**
+- [x] **Step 5: 診断用listenerなしの対照を計測する**
 
 診断用listenerを解除し、同じviewport、target offset、cursor位置、native touch sequenceでfoldとunfoldを再計測する。
 
@@ -384,7 +384,7 @@ Expected: foldとunfoldの見出しY座標span、`scrollTop` spanがすべて0px
 
 実績: foldとunfoldを各36 frame計測し、両spanが0px、selection headが344のまま、fold状態が反転した。
 
-- [ ] **Step 6: 実Obsidianの一時状態をcleanupする**
+- [x] **Step 6: 実Obsidianの一時状態をcleanupする**
 
 診断用listener、一時fixture、mobile emulation、device metrics、touch emulation、window上の一時変数を削除し、`test.md`を再度開く。
 
@@ -402,7 +402,7 @@ Expected: titleが`test - vault - Obsidian 1.13.2`、mobile emulationはfalse、
 - Consumes: Task 1のcommit、Task 2の実Obsidian計測結果
 - Produces: 全test通過済みでdefault branchへlandされた修正
 
-- [ ] **Step 1: upstream更新可能性を確認する**
+- [x] **Step 1: upstream更新可能性を確認する**
 
 Run:
 
@@ -413,13 +413,13 @@ but pull
 
 Expected: conflictなく最新upstreamを取り込める。競合がある場合は実装を進めず状態を診断する。
 
-- [ ] **Step 2: full test前にfixtureをvault外へbackupする**
+- [x] **Step 2: full test前にfixtureをvault外へbackupする**
 
 `vault/test.md`をvault外の一時pathへcopyし、SHA-256 hashを記録する。Obsidianのtest vault rendererを終了し、LevelDB lockが解放されたことを確認する。
 
 Expected: backup fileが存在し、元fileとhashが一致し、test rendererが終了している。
 
-- [ ] **Step 3: CI相当の全testをNode.js 22.23.1で実行する**
+- [x] **Step 3: CI相当の全testをNode.js 22.23.1で実行する**
 
 Run:
 
@@ -429,13 +429,13 @@ npx -y -p node@22.23.1 -c 'node --version && npm test'
 
 Expected: Node.js 22.23.1で全test suiteがPASSする。
 
-- [ ] **Step 4: `vault/test.md`をrestoreして遅延保存後もhashを確認する**
+- [x] **Step 4: `vault/test.md`をrestoreして遅延保存後もhashを確認する**
 
 `vault=vault`のrendererが終了した状態を再確認してbackupをrestoreする。少し待ってからSHA-256を再計算する。
 
 Expected: restore直後と待機後のhashがbackupのhashと一致する。
 
-- [ ] **Step 5: 最終差分とbranch状態を確認する**
+- [x] **Step 5: 最終差分とbranch状態を確認する**
 
 Run:
 
@@ -446,7 +446,7 @@ but diff
 
 Expected: uncommitted changeがなく、`dist/main.js`やfixtureが追跡されず、設計・計画・実装commitだけが`codex/fix-mobile-heading-selection-jank`にある。
 
-- [ ] **Step 6: implementation planを完了状態へ更新してcommitする**
+- [x] **Step 6: implementation planを完了状態へ更新してcommitする**
 
 このfileのcheckboxを実績に合わせて`[x]`へ変更し、format後にGitButlerでplan fileだけをcommitする。
 
