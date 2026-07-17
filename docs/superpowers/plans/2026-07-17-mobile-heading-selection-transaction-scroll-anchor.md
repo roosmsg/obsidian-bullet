@@ -4,7 +4,7 @@
 
 **Goal:** モバイルのnative見出しchevronで、click captureとfoldの間にselection transactionが入っても、操作した見出しのY位置を固定する。
 
-**Architecture:** `MobileNativeFoldScroll`のpending snapshotを単一の`EditorState`へ固定せず、一つのpending objectとして同じevent turn内の後続stateへ引き継ぐ。最初の`foldEffect`または`unfoldEffect`でsnapshotを消費し、timeout後はobject identityを確認して無効化する。
+**Architecture:** `MobileNativeFoldScroll`のpending snapshotを単一の`EditorState`へ固定せず、一つのpending objectとして同じevent turn内の後続stateへ引き継ぐ。最初の`foldEffect`、`unfoldEffect`、またはfolded rangeの実内容を変更するtransactionでsnapshotを消費し、timeout後はobject identityを確認して無効化する。
 
 **Tech Stack:** TypeScript、CodeMirror 6 (`@codemirror/state`, `@codemirror/language`, `@codemirror/view`)、Jest、Obsidian 1.13.2、GitButler CLI
 
@@ -32,7 +32,7 @@
 **Interfaces:**
 
 - Consumes: `MobileNativeFoldScroll.prepare(view: EditorView): void`、`MobileNativeFoldScroll.extension: Extension`
-- Produces: `PendingFoldScrollSnapshot`、同じevent turn内の非fold transactionを通過し、最初のfold/unfoldで消費されるsnapshot lifecycle
+- Produces: `PendingFoldScrollSnapshot`、同じevent turn内の非fold transactionを通過し、最初の明示的またはimplicitなfold/unfoldで消費されるsnapshot lifecycle
 
 - [ ] **Step 1: 中間selection transactionの回帰testを書く**
 
@@ -94,6 +94,13 @@ Expected: 新しいfold/unfoldの2 caseが`Expected length: 2, Received length: 
 
 `src/features/MobileRightFoldControls.ts`でsnapshotのvalue型を次のobjectへ変更する。
 
+`foldedRanges()`の実内容比較には、次のimportを使う。
+
+```ts
+import { foldEffect, foldedRanges, unfoldEffect } from "@codemirror/language";
+import { EditorState, Extension, RangeSet } from "@codemirror/state";
+```
+
 ```ts
 interface PendingFoldScrollSnapshot {
   active: boolean;
@@ -122,6 +129,10 @@ export class MobileNativeFoldScroll {
       if (
         transaction.effects.some(
           (effect) => effect.is(foldEffect) || effect.is(unfoldEffect),
+        ) ||
+        !RangeSet.eq(
+          [foldedRanges(transaction.startState)],
+          [foldedRanges(transaction.state)],
         )
       ) {
         pending.active = false;
@@ -170,7 +181,48 @@ npx -y -p node@22.23.1 -c 'node --version && SKIP_OBSIDIAN=1 ./node_modules/.bin
 
 Expected: `MobileRightFoldControls.test.ts`の全testがPASSする。
 
-- [ ] **Step 5: timeout後にsnapshotが流用されない回帰testを書く**
+- [ ] **Step 5: 同一selection transactionによるimplicit unfoldの回帰testを書く**
+
+`codeFolding()`でカーソルをfold内に残したstateを作り、同一selectionの再設定だけでfolded rangeが解除されるcaseを追加する。
+
+```ts
+test("keeps a corrected scroll snapshot when moving the selection implicitly unfolds its range", () => {
+  const snapshotType = StateEffect.define<string>();
+  const snapshot = snapshotType.of("viewport");
+  const nativeFoldScroll = new MobileNativeFoldScroll(
+    jest.fn().mockReturnValue(snapshot),
+  );
+  const state = EditorState.create({
+    doc: "- parent\n  - child",
+    extensions: [codeFolding(), nativeFoldScroll.extension],
+    selection: { anchor: 10 },
+  });
+  const foldedState = state.update({
+    effects: foldEffect.of({ from: 8, to: 17 }),
+  }).state;
+  const view = {
+    dom: {
+      ownerDocument: {
+        defaultView: { setTimeout: jest.fn() },
+      },
+    },
+    state: foldedState,
+  };
+
+  expect(foldedRanges(foldedState).size).toBe(1);
+  nativeFoldScroll.prepare(view as never);
+  const selectionTransaction = foldedState.update({
+    selection: { anchor: 10 },
+  });
+
+  expect(foldedRanges(selectionTransaction.state).size).toBe(0);
+  expect(selectionTransaction.effects).toContain(snapshot);
+});
+```
+
+Expected: 明示的な`unfoldEffect`がないselection transactionへsnapshotが追加される。
+
+- [ ] **Step 6: timeout後にsnapshotが流用されない回帰testを書く**
 
 同じtest fileへ、timeout callbackを明示的に実行するtestを追加する。
 
@@ -223,7 +275,7 @@ test.each([
 );
 ```
 
-- [ ] **Step 6: lifecycle testと関連unit testを実行する**
+- [ ] **Step 7: lifecycle testと関連unit testを実行する**
 
 Run:
 
@@ -233,15 +285,15 @@ npx -y -p node@22.23.1 -c 'node --version && SKIP_OBSIDIAN=1 ./node_modules/.bin
 
 Expected: 両test suiteがPASSし、console errorまたはwarningが出ない。
 
-- [ ] **Step 7: durableなtransaction順序をAGENTS.mdへ記録する**
+- [ ] **Step 8: durableなtransaction順序をAGENTS.mdへ記録する**
 
 `AGENTS.md`の「モバイルの右端折りたたみコントロールについて」へ次を追加する。
 
 ```markdown
-- mobile native chevronの`click` captureとnative fold transactionの間には、カーソル由来のselection-only transactionが入る場合があります。pending scroll snapshotをclick時点の`EditorState`へ固定せず、同じevent turnの後続`EditorState`へ引き継ぎ、最初の`foldEffect`または`unfoldEffect`で消費してください。`setTimeout(..., 0)`後は無効化し、`prepare()`→selection transaction→native fold/unfoldの順序をunit testと実Obsidianで確認してください。
+- mobile native chevronの`click` captureとnative fold transactionの間には、カーソル由来のselection-only transactionが入る場合があります。pending scroll snapshotをclick時点の`EditorState`へ固定せず、同じevent turnの後続`EditorState`へ引き継いでください。カーソルがfold内にある場合、そのselection transaction自体が明示的な`unfoldEffect`なしでfolded rangeを解除するため、最初の`foldEffect`、`unfoldEffect`、または`foldedRanges(startState)`と`foldedRanges(state)`の実内容が変わるtransactionでsnapshotを消費してください。`setTimeout(..., 0)`後は無効化し、`prepare()`→selection transaction→native fold/unfoldの順序をunit testと実Obsidianで確認してください。
 ```
 
-- [ ] **Step 8: format、型検査、lintを実行する**
+- [ ] **Step 9: format、型検査、lintを実行する**
 
 Run:
 
@@ -251,7 +303,7 @@ npx -y -p node@22.23.1 -c 'node --version && ./node_modules/.bin/prettier --writ
 
 Expected: Node.jsは22.23.1、Prettier変更後にtypecheckとlintがexit 0。
 
-- [ ] **Step 9: 実装差分だけをGitButler branchへcommitする**
+- [ ] **Step 10: 実装差分だけをGitButler branchへcommitする**
 
 Run:
 
@@ -322,11 +374,15 @@ Expected:
 - fold状態が各gestureで反転する。
 - selection headがgesture前後で一致する。
 
+実績: foldとunfoldを各36 frame計測し、両spanが0px、selection headが344のまま、fold状態が反転した。
+
 - [ ] **Step 5: 診断用listenerなしの対照を計測する**
 
 診断用listenerを解除し、同じviewport、target offset、cursor位置、native touch sequenceでfoldとunfoldを再計測する。
 
 Expected: foldとunfoldの見出しY座標span、`scrollTop` spanがすべて0px。
+
+実績: foldとunfoldを各36 frame計測し、両spanが0px、selection headが344のまま、fold状態が反転した。
 
 - [ ] **Step 6: 実Obsidianの一時状態をcleanupする**
 
