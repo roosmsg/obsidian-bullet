@@ -38,7 +38,7 @@
 - Consumes: stored settings may contain the removed legacy property `listLines?: boolean`.
 - Produces: `SettingsObject` without `listLines`, and the existing `outerVerticalLines` and `verticalLinesAction` accessors as the only vertical-line settings.
 
-- [ ] **Step 1: Write failing storage migration tests**
+- [x] **Step 1: Write failing storage migration tests**
 
 Add tests to `src/services/__tests__/Settings.test.ts` that load a legacy object with `listLines: false`, `outerListLines: true`, and `listLineAction: "toggle-folding"`.
 Assert that `outerVerticalLines` is `false`, `verticalLinesAction` is `"none"`, and `getValues()` has no own `listLines` property.
@@ -46,7 +46,7 @@ Call `save()` and assert that `saveData` receives an object without `listLines`.
 
 Also adapt notification and reset tests so they subscribe to `outerListLines` and `listLineAction`, with no reference to the removed key or accessor.
 
-- [ ] **Step 2: Write failing settings-surface tests**
+- [x] **Step 2: Write failing settings-surface tests**
 
 Update `src/features/__tests__/SettingsTab.test.ts` so the Appearance group contains only:
 
@@ -61,7 +61,7 @@ Remove `verticalLines` from `makeSettings()` and require both declarative defini
 
 Update `src/__tests__/ObsidianBulletPluginWithTests.test.ts` and `jest/test-globals.type-test.ts` so `listLines` is rejected as an unknown setting key, while malformed boolean coverage uses `outerListLines`.
 
-- [ ] **Step 3: Run the targeted tests and verify RED**
+- [x] **Step 3: Run the targeted tests and verify RED**
 
 Run:
 
@@ -75,7 +75,7 @@ SKIP_OBSIDIAN=1 n exec 22.23.1 npx jest \
 
 Expected: FAIL because `listLines` still exists, the legacy value is retained, and the settings UI still exposes the removed control.
 
-- [ ] **Step 4: Implement the storage migration**
+- [x] **Step 4: Implement the storage migration**
 
 Remove `listLines` from `SettingsObject`, `DEFAULT_SETTINGS`, and the `verticalLines` getter and setter.
 Introduce a storage-only input type:
@@ -96,18 +96,18 @@ if (listLines === false) {
 }
 ```
 
-- [ ] **Step 5: Remove the UI and test-command controls**
+- [x] **Step 5: Remove the UI and test-command controls**
 
 Delete `verticalLines` from `SettingsControlKey`, `SETTING_GROUPS`, `getControlValue()`, and `setControlValue()`.
 Delete the `listLines` decoder from `settingCommandDecoders`.
 Keep `outerListLines` and `listLineAction` unchanged.
 
-- [ ] **Step 6: Run the targeted tests and verify GREEN**
+- [x] **Step 6: Run the targeted tests and verify GREEN**
 
 Run the Step 3 command again.
 Expected: PASS with no test failures.
 
-- [ ] **Step 7: Commit Task 1 with GitButler**
+- [x] **Step 7: Commit Task 1 with GitButler**
 
 Run `but diff`, select only the seven Task 1 files, and commit to `codex/remove-vertical-lines-setting` with an English Conventional Commit message containing explicit `Why:` and `What:` sections.
 
@@ -129,13 +129,13 @@ Run `but diff`, select only the seven Task 1 files, and commit to `codex/remove-
 - Consumes: `Settings.verticalLinesAction` and `Settings.outerVerticalLines` from Task 1.
 - Produces: action body class based only on `verticalLinesAction`, persistent native guides based only on the action, and outer decorations based only on `outerVerticalLines`.
 
-- [ ] **Step 1: Write failing `VerticalLines` behavior tests**
+- [x] **Step 1: Write failing `VerticalLines` behavior tests**
 
 Change `src/features/__tests__/VerticalLines.test.ts` to require subscription to only `listLineAction` at the feature level.
 Require `bullet-plugin-vertical-lines-action-toggle-folding` and `GUIDE_FOLDING_SCROLL_PAST_END_EXTENSION` to follow `verticalLinesAction` without a `verticalLines` field.
 Remove every assertion for the obsolete `bullet-plugin-vertical-lines` body class.
 
-- [ ] **Step 2: Write failing `GuideFolding` ownership tests**
+- [x] **Step 2: Write failing `GuideFolding` ownership tests**
 
 Change fixtures in `src/features/__tests__/GuideFolding.test.ts` to remove `verticalLines`.
 Require:
@@ -154,7 +154,7 @@ Retain ignored-interaction coverage using `verticalLinesAction: "none"` as the d
 
 Update CSS assertions so normal outer styles and persistent marker styles do not require `.bullet-plugin-vertical-lines`, while action-only styles continue to require `.bullet-plugin-vertical-lines-action-toggle-folding`.
 
-- [ ] **Step 3: Run runtime tests and verify RED**
+- [x] **Step 3: Run runtime tests and verify RED**
 
 Run:
 
@@ -167,7 +167,7 @@ SKIP_OBSIDIAN=1 n exec 22.23.1 npx jest \
 
 Expected: FAIL because production code still reads `settings.verticalLines`, subscribes to `listLines`, and scopes normal styles under the removed body class.
 
-- [ ] **Step 4: Simplify `VerticalLines`**
+- [x] **Step 4: Simplify `VerticalLines`**
 
 Remove `VERTICAL_LINES_BODY_CLASS` and the display `DocumentBodyClass` instance.
 Keep only the action body class and return:
@@ -181,7 +181,7 @@ private shouldApplyActionBodyClass = () => {
 Subscribe the feature-level callback only to `listLineAction`.
 Keep the CodeMirror view plugin registered at all times because it owns outer decorations as well as folding interaction.
 
-- [ ] **Step 5: Simplify `GuideFoldingPluginValue`**
+- [x] **Step 5: Simplify `GuideFoldingPluginValue`**
 
 Subscribe to `outerListLines` and `listLineAction` only.
 Make `interactionEnabled()` return whether `verticalLinesAction` is `"toggle-folding"`.
@@ -191,7 +191,7 @@ Pass `interactionEnabled()` to `synchronizePersistentIndentGuides()`.
 
 Keep `outerInteractionEnabled()` as the conjunction of outer visibility and folding action.
 
-- [ ] **Step 6: Remove the obsolete normal-display CSS scope**
+- [x] **Step 6: Remove the obsolete normal-display CSS scope**
 
 Change the normal selectors to:
 
@@ -207,12 +207,12 @@ Change the normal selectors to:
 Do not add nested-guide color, width, offset, or geometry declarations.
 Update the comment in `src/ObsidianBulletPlugin.ts` to describe vertical-line folding and outer-guide settings rather than `settings.verticalLines`.
 
-- [ ] **Step 7: Run runtime tests and verify GREEN**
+- [x] **Step 7: Run runtime tests and verify GREEN**
 
 Run the Step 3 command again.
 Expected: PASS with no test failures.
 
-- [ ] **Step 8: Commit Task 2 with GitButler**
+- [x] **Step 8: Commit Task 2 with GitButler**
 
 Run `but diff`, select only the six Task 2 files, and commit to `codex/remove-vertical-lines-setting` with an English Conventional Commit message containing explicit `Why:` and `What:` sections.
 
@@ -231,13 +231,13 @@ Run `but diff`, select only the six Task 2 files, and commit to `codex/remove-ve
 - Consumes: the settings and behavior shipped by Tasks 1 and 2.
 - Produces: user documentation that exposes only independently functioning controls.
 
-- [ ] **Step 1: Update the README settings table**
+- [x] **Step 1: Update the README settings table**
 
 Delete the `Draw vertical indentation lines` row from Appearance.
 Keep `Draw outer list lines` in Appearance and `Fold lists from vertical indentation lines` in Folding.
 Rewrite the compatibility sentence so it identifies `vertical-line folding and outer guides` as Live Preview behavior rather than attributing native indentation-guide drawing to Bullet.
 
-- [ ] **Step 2: Check for stale implementation references**
+- [x] **Step 2: Check for stale implementation references**
 
 Run:
 
@@ -250,7 +250,7 @@ Expected: only the legacy migration test and the compile-time unknown-key assert
 No production accessor, current decoder, CSS body class, README label, or `verticalLines` reference remains.
 Historical specs and plans are intentionally unchanged.
 
-- [ ] **Step 3: Run formatting and lint verification**
+- [x] **Step 3: Run formatting and lint verification**
 
 Run:
 
@@ -260,7 +260,7 @@ n exec 22.23.1 npm run lint
 
 Expected: Prettier and ESLint both exit 0 with no warnings.
 
-- [ ] **Step 4: Run the full unit-test suite**
+- [x] **Step 4: Run the full unit-test suite**
 
 Run:
 
@@ -270,7 +270,7 @@ n exec 22.23.1 npm run test:unit -- --runInBand
 
 Expected: all `src` test suites pass and Jest reports zero failed tests.
 
-- [ ] **Step 5: Build the test bundle**
+- [x] **Step 5: Build the test bundle**
 
 Run:
 
@@ -280,11 +280,11 @@ n exec 22.23.1 npm run build-with-tests
 
 Expected: Rollup exits 0 and generates the ignored `dist/main.js` test bundle without adding it to version control.
 
-- [ ] **Step 6: Review the complete diff against the spec**
+- [x] **Step 6: Review the complete diff against the spec**
 
 Check that old `listLines: false` migration is covered, outer visibility is independent, persistent guides require folding action, and native nested-guide paint remains untouched.
 Address all Critical and Important review findings, then rerun the covering tests.
 
-- [ ] **Step 7: Commit Task 3 with GitButler**
+- [x] **Step 7: Commit Task 3 with GitButler**
 
 Run `but diff`, select `README.md` and this plan file if still uncommitted, and commit to `codex/remove-vertical-lines-setting` with an English Conventional Commit message containing explicit `Why:` and `What:` sections.
