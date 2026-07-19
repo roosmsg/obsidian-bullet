@@ -471,12 +471,13 @@ Expected: the branch contains the design, implementation, coverage, documentatio
 
 ## Execution evidence
 
-- The policy RED run failed only the new empty-line Space case while 69 existing tests passed; the GREEN run passed 70/70 policy tests.
+- The initial policy RED run failed only the new empty-line Space case while 69 existing tests passed; the first GREEN run passed 70/70 policy tests.
+- Final review exposed frontmatter and fenced-code blank lines as missing exclusions; both new regression cases failed before the classifier check and the corrected policy passed 72/72 tests.
 - The focused adapter and policy run passed 83/83 tests, and `build-with-tests` completed without TypeScript warnings after correcting the test selection type.
-- The complete Node.js 22.23.1 unit run passed 54/54 suites and 631/631 tests.
+- The final complete Node.js 22.23.1 unit run passed 54/54 suites and 633/633 tests.
 - `npm run lint`, the production build, and the final test build exited zero.
-- The final Obsidian run passed 74/74 suites with 775 passed and 15 skipped tests out of 790 total.
-- The Obsidian integration coverage exercised empty-line Space in Live Preview and Source mode, preserved an indented continuation, and reverted Space plus its generated bullet with one Command-Z.
+- The final Obsidian run passed 74/74 suites with 779 passed and 15 skipped tests out of 794 total.
+- The Obsidian integration coverage exercised empty-line Space in Live Preview and Source mode, preserved an indented continuation and structural blank lines, and reverted Space plus its generated bullet with one Command-Z.
 - `vault/test.md` was restored after the `vault=vault` renderer exited and remained 4,588 bytes with SHA-256 `3b41a8cfcfc20a345fa3b2d33a909f1fb00bdd00d2302223bedefc0ed9c96f0b` after a five-second delayed-save window.
-- Both exact test backup directories were moved to macOS Trash only after the restored fixture matched the backup.
-- The design, plan, implementation, adapter coverage, undo integration, and agent cleanup instruction were committed as `545e9d3`, `bede89d`, `7f72523`, `aa1fd2c`, `302a632`, and `d2d5083`.
+- All three exact test backup directories were moved to macOS Trash only after the restored fixture matched the backup.
+- The design, plan, implementation, adapter coverage, undo integration, agent cleanup instruction, and structural-line fix were committed as `545e9d3`, `bede89d`, `7f72523`, `aa1fd2c`, `302a632`, `d2d5083`, and `336af5c`.
