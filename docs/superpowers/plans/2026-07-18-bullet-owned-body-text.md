@@ -12,7 +12,7 @@
 
 - 設計の基準は`docs/superpowers/specs/2026-07-18-bullet-owned-body-text-design.md`とする。
 - Live Previewとは別のeditor modeを追加しない。
-- 新設定`keepBodyTextInBullets`の初期値は`false`とする。
+- 新設定`keepBodyTextInBullets`の初期値は`true`とする。
 - paste、drop、completion、undo、redo、remote、user eventを持たない変更を補正しない。
 - 直接変更された物理行だけを補正し、文書全体のvalidatorにはしない。
 - 通常入力と補正を一つのundo history eventへまとめる。
@@ -60,7 +60,7 @@ test("keeps body text enforcement disabled for saved data predating the setting"
 
   await settings.load();
 
-  expect(settings.keepBodyTextInBullets).toBe(false);
+  expect(settings.keepBodyTextInBullets).toBe(true);
 });
 
 test("notifies subscribers when body text enforcement changes", async () => {

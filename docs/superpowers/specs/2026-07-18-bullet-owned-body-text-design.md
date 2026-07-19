@@ -14,7 +14,7 @@ Live Previewとは別のeditor modeを追加しない。
 
 Editing groupへ`Keep body text in bullets`というtoggleを追加する。
 
-保存keyは`keepBodyTextInBullets`とし、既存利用者の編集挙動を変えないため初期値は`false`にする。
+保存keyは`keepBodyTextInBullets`とし、未設定時の初期値は`true`にする。
 
 設定を有効にすると、直接入力と削除だけに次の規則を適用する。
 
