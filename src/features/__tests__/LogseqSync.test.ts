@@ -450,6 +450,9 @@ function makeSyncFixture(rootContent: string) {
 
   addFile("Bulletlist/Bulletlist.md", rootContent);
   const vault = {
+    create: jest.fn(async (path: string, content: string) =>
+      addFile(path, content),
+    ),
     createFolder: jest.fn(async (path: string) => addFolder(path)),
     getAbstractFileByPath: (path: string) => entries.get(path) ?? null,
     on: jest.fn(() => ({})),
@@ -1002,6 +1005,68 @@ describe("LogseqSyncService", () => {
         fixture.entries.has("Bulletlist/Project/Child/Grandchild old"),
       ).toBe(false);
       expect(fixture.getState()?.notes).not.toHaveProperty(["grandchild"]);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  test("revives a trashed note when its bullet is pasted back late", async () => {
+    const fixture = await makeAdoptedFixture();
+    const now = Date.now();
+    const nowSpy = jest.spyOn(Date, "now").mockReturnValue(now);
+
+    try {
+      fixture.updateRoot(
+        ["- Bulletlist", "  - Project ^project", ""].join("\n"),
+      );
+      await fixture.service.synchronizeNow();
+
+      nowSpy.mockReturnValue(now + 10_001);
+      await fixture.service.confirmPendingDeletionsNow();
+      expect(fixture.trashedPaths).toContain(
+        "Bulletlist/Project/Child/Child.md",
+      );
+
+      fixture.updateRoot(initialRoot);
+      await fixture.service.synchronizeNow();
+
+      expect(
+        fixture.getFile("Bulletlist/Project/Child/Child.md")?.content,
+      ).toBe("- [ ] Child ^child\n  - Grandchild old ^grandchild\n");
+      expect(
+        fixture.getFile(
+          "Bulletlist/Project/Child/Grandchild old/Grandchild old.md",
+        )?.content,
+      ).toBe("- Grandchild old ^grandchild\n");
+      expect(fixture.getState()?.notes).toHaveProperty(["child"]);
+      expect(fixture.getState()?.notes).toHaveProperty(["grandchild"]);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  test("does not revive a note once the revival window has expired", async () => {
+    const fixture = await makeAdoptedFixture();
+    const now = Date.now();
+    const nowSpy = jest.spyOn(Date, "now").mockReturnValue(now);
+
+    try {
+      fixture.updateRoot(
+        ["- Bulletlist", "  - Project ^project", ""].join("\n"),
+      );
+      await fixture.service.synchronizeNow();
+
+      nowSpy.mockReturnValue(now + 10_001);
+      await fixture.service.confirmPendingDeletionsNow();
+
+      nowSpy.mockReturnValue(now + 10_001 + 300_001);
+      fixture.updateRoot(initialRoot);
+      await fixture.service.synchronizeNow();
+
+      expect(fixture.entries.has("Bulletlist/Project/Child/Child.md")).toBe(
+        false,
+      );
+      expect(fixture.getState()?.notes).not.toHaveProperty(["child"]);
     } finally {
       nowSpy.mockRestore();
     }

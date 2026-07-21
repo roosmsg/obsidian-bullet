@@ -7,7 +7,8 @@ import { Settings } from "../services/Settings";
 
 const SYNC_STATE_VERSION = 3;
 const SYNC_DELAY_MS = 300;
-const DELETE_GRACE_MS = 30_000;
+const DELETE_GRACE_MS = 3_000;
+const REVIVE_WINDOW_MS = 300_000;
 const SYNC_ID_LENGTH = 6;
 const SYNC_ID_ATTEMPTS = 32;
 const LEGACY_SYNC_ID_RE =
@@ -95,6 +96,8 @@ interface LogseqSyncStateV3 {
   rootCtime: number;
   rootMtime: number;
   rootPath: string;
+  /** Recently trashed identities that may be revived, id → expiry time. */
+  trashedNotes: Record<string, number>;
   version: 3;
 }
 
@@ -774,6 +777,19 @@ function parseSyncState(value: unknown): LogseqSyncStateV3 | null {
     }
     pendingDeletions[id] = pending;
   }
+  // Older v3 payloads have no trashedNotes; tolerate and drop bad entries.
+  const trashedNotes: Record<string, number> = {};
+  if (isRecord(value.trashedNotes)) {
+    for (const [id, expiresAt] of Object.entries(value.trashedNotes)) {
+      if (
+        isSafeSyncId(id) &&
+        typeof expiresAt === "number" &&
+        Number.isFinite(expiresAt)
+      ) {
+        trashedNotes[id] = expiresAt;
+      }
+    }
+  }
   return {
     folder: value.folder,
     notes,
@@ -782,6 +798,7 @@ function parseSyncState(value: unknown): LogseqSyncStateV3 | null {
     rootCtime: value.rootCtime,
     rootMtime: value.rootMtime,
     rootPath: value.rootPath,
+    trashedNotes,
     version: 3,
   };
 }
@@ -1044,6 +1061,7 @@ export class LogseqSyncService {
       rootCtime: root.stat.ctime,
       rootMtime: root.stat.mtime,
       rootPath: root.path,
+      trashedNotes: {},
       version: 3,
     };
   }
@@ -1395,6 +1413,48 @@ export class LogseqSyncService {
         } else {
           conflicts++;
         }
+      }
+    }
+
+    // Revive recently trashed notes whose bullet came back: a paste that
+    // arrives after the deletion grace period recreates the mirror from the
+    // outline, so a slow cut-and-paste never loses the connection.
+    const reviveNow = Date.now();
+    for (const [id, expiresAt] of Object.entries(state.trashedNotes)) {
+      if (expiresAt <= reviveNow || state.notes[id]) {
+        delete state.trashedNotes[id];
+        continue;
+      }
+      const draft = mergedProbe.drafts.find((candidate) => candidate.id === id);
+      if (!draft || (draftIdCounts.get(id) ?? 0) > 1) {
+        continue;
+      }
+      const key = draft.filePath.toLowerCase();
+      if (collidedPaths.has(key) || claimedPaths.has(key)) {
+        continue;
+      }
+      if (this.plugin.app.vault.getAbstractFileByPath(draft.filePath)) {
+        delete state.trashedNotes[id];
+        continue;
+      }
+      const content = getBranchContent(mergedLines, draft.list);
+      try {
+        await this.ensureFolder(draft.folderPath);
+        const created = await this.plugin.app.vault.create(
+          draft.filePath,
+          content,
+        );
+        state.notes[id] = {
+          base: content,
+          ctime: created.stat.ctime,
+          path: created.path,
+        };
+        this.trackedFiles.set(id, created);
+        noteReads.set(id, content);
+        claimedPaths.add(key);
+        delete state.trashedNotes[id];
+      } catch (error) {
+        this.showError(`Unable to restore ${draft.filePath}`, error);
       }
     }
 
@@ -1800,6 +1860,7 @@ export class LogseqSyncService {
         }
         await this.plugin.app.vault.trash(file, false);
         trashed++;
+        state.trashedNotes[id] = Date.now() + REVIVE_WINDOW_MS;
         await this.trashFolderIfEmpty(getParentPath(pending.path));
       }
       delete state.pendingDeletions[id];
@@ -1812,7 +1873,9 @@ export class LogseqSyncService {
     }
     if (trashed > 0) {
       new Notice(
-        `Bullet moved ${trashed} deleted outline note${trashed === 1 ? "" : "s"} to Obsidian trash.`,
+        trashed === 1
+          ? "Bullet note moved to trash."
+          : `${trashed} bullet notes moved to trash.`,
         5000,
       );
     }

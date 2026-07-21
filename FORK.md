@@ -21,8 +21,10 @@ in both directions: edits made in either file are merged into the other, and
 when both sides touch the same line the most recently saved file wins.
 Connected bullets carry short native block IDs (`^abc123`) as stable
 identities, so renames and moves follow the bullet instead of deleting
-anything. Verified notes whose bullets stay deleted for 30 seconds are sent to
-Obsidian's recoverable local trash; ambiguous files are left alone.
+anything. Verified notes whose bullets stay deleted for a few seconds are sent
+to Obsidian's recoverable local trash, and a bullet pasted back within five
+minutes gets its note recreated from the outline; ambiguous files are left
+alone.
 
 Logseq mode is opt-in. Set **Folder for Logseq mode** under
 **Settings → Bullet** to enable it for that folder and its subfolders.
