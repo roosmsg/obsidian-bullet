@@ -963,7 +963,7 @@ export class LogseqModePluginValue implements PluginValue {
     const root = this.parser.parse(editor, { line, ch: 0 });
     const list = root?.getListUnderLine(line);
     if (!list || list.getFirstLineContentStart().line !== line) {
-      new Notice("This bullet cannot be opened as a Logseq note.", 5000);
+      new Notice("This bullet cannot be opened as a child note.", 5000);
       return;
     }
 
@@ -996,7 +996,7 @@ export class LogseqModePluginValue implements PluginValue {
 
     const branch = extractBulletBranchFromList(editor, list);
     if (!branch) {
-      new Notice("This bullet cannot be opened as a Logseq note.", 5000);
+      new Notice("This bullet cannot be opened as a child note.", 5000);
       return;
     }
     const ancestors = extractBulletAncestorBranches(editor, list);
