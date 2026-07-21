@@ -11,7 +11,7 @@ This fork adds two features to the original plugin.
 
 ### Logseq mode
 
-Logseq mode makes bullets inside a configured vault folder clickable. Clicking
+Logseq mode makes bullets inside a configured vault folder navigable. Shift+clicking
 a bullet creates or opens a nested Markdown note based on that bullet, making
 it possible to navigate an outline as a hierarchy of files.
 

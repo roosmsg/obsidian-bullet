@@ -17,6 +17,7 @@ import {
 jest.mock(
   "obsidian",
   () => ({
+    MarkdownView: class MarkdownView {},
     Notice: jest.fn(),
     normalizePath: (path: string) =>
       path

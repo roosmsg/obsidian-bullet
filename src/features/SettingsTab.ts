@@ -130,7 +130,7 @@ const SETTING_GROUPS = [
       },
       {
         name: "Show bullet threading",
-        desc: "Highlight the nested path to the list item under the pointer in the editor, reading view, and Outline pane.",
+        desc: "Highlight the nested path to the list item under the pointer in the editor and reading view.",
         control: {
           type: "toggle",
           key: "bulletThreading",
@@ -174,7 +174,7 @@ const SETTING_GROUPS = [
     items: [
       {
         name: "Folder for Logseq mode",
-        desc: "Make list bullets clickable in this vault folder and all of its subfolders. Clicking a bullet creates or opens a file-backed child outline.",
+        desc: "Shift+click a list bullet in this vault folder or its subfolders to create or open a file-backed outline. Normal clicks keep Obsidian's fold and unfold behavior.",
         control: {
           type: "text",
           key: "logseqFolder",

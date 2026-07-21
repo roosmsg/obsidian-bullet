@@ -15,7 +15,7 @@ Requires Obsidian 1.12.7 or later. Bullet supports desktop and mobile.
 - **Focused navigation:** keep the caret in editable content and away from hidden bullet or checkbox markup.
 - **Visible structure:** connect nested items with indentation guides, add guides beside root list chunks, and fold branches from the guides themselves.
 - **Mobile-friendly folding:** move native list and heading fold controls to the right edge in Live Preview.
-- **File-backed outlines:** optionally make bullets in one vault folder clickable, creating nested Markdown notes that preserve the clicked branch.
+- **File-backed outlines:** optionally Shift+click bullets in one vault folder to create nested Markdown notes that preserve the selected branch.
 
 Automatic editing, appearance, folding, and drag-and-drop behavior can be adjusted from **Settings → Bullet**.
 
@@ -134,7 +134,7 @@ All settings are under **Settings → Bullet**.
 | -------------------------- | :-----: | -------------------------------------------------------------------------------------------------- |
 | **Style list bullets**     |   On    | Use Bullet's marker spacing, larger dots, and parent hover feedback with active theme colors.      |
 | **Enhance vertical lines** |   On    | Strengthen indentation guides and use a continuous rounded hover.                                  |
-| **Show bullet threading**  |   Off   | Highlight the nested path to the hovered item in the editor, reading view, and Outline.            |
+| **Show bullet threading**  |   Off   | Highlight the nested path to the hovered item in the editor and reading view.                      |
 
 ### Folding
 
@@ -146,11 +146,15 @@ All settings are under **Settings → Bullet**.
 
 ### Logseq mode
 
-Set **Folder for Logseq mode** to a vault-relative folder such as `Bulletlist` to make Live Preview bullets in that folder and all of its subfolders clickable. The setting is empty by default, so the mode is opt-in.
+Set **Folder for Logseq mode** to a vault-relative folder such as `Bulletlist` to make Live Preview bullets in that folder and all of its subfolders navigable with Shift+click. The setting is empty by default, so the mode is opt-in.
 
-Clicking `Task Beta` in `Bulletlist/Bulletlist.md` creates `Bulletlist/Task Beta/Task Beta.md` and initializes it with the clicked item and all of its children. Clicking it again opens the existing file without replacing later edits. Bullets in the new file behave the same way, creating the next level inside `Bulletlist/Task Beta/`.
+Shift+clicking `Task Beta` in `Bulletlist/Bulletlist.md` creates `Bulletlist/Task Beta/Task Beta.md` and initializes it with the clicked item and all of its children. Shift+clicking it again opens the existing file without replacing later edits. A normal click keeps Obsidian's native fold/unfold behavior. Bullets in the new file behave the same way, creating the next level inside `Bulletlist/Task Beta/`.
 
-Generated folder and file names use the first 25 valid characters of the bullet text.
+Nested items keep their complete outline path even when opened directly from the root note. For example, Shift+clicking `Child 1` under `Beta test` creates `Bulletlist/Beta test/Child 1/Child 1.md`. Every intermediate list level becomes a folder; the top-level item represents the current page and is not duplicated.
+
+In a generated note, its first bullet links back to the parent note. Shift+clicking `- Child 1` inside `Child 1.md` opens `Beta test/Beta test.md`. Opening a deeply nested item directly also creates any missing intermediate parent notes, preserving each ancestor branch and its Markdown syntax.
+
+Generated folder and file names use the first 25 valid characters of the bullet's visible text. Markdown syntax such as heading markers and emphasis is omitted from the name while the new note keeps the original list-item syntax.
 
 ### Advanced
 

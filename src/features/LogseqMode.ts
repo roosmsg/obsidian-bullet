@@ -1,5 +1,6 @@
 import {
   App,
+  MarkdownView,
   Notice,
   Plugin,
   TAbstractFile,
@@ -15,13 +16,15 @@ import { Feature } from "./Feature";
 import { ListMarkerInteractionGuard } from "./ListMarkerInteractionGuard";
 
 import { MyEditor, getEditorFromState, getFileFromState } from "../editor";
+import type { List } from "../root";
 import { Parser } from "../services/Parser";
 import { Settings } from "../services/Settings";
 
 export const LOGSEQ_MODE_CLASS = "bullet-plugin-logseq-mode";
 export const MAX_BULLET_NOTE_NAME_LENGTH = 25;
 
-const BULLET_SELECTOR = ".list-bullet";
+const LIST_MARKER_SELECTOR =
+  ".list-bullet, .cm-formatting-list, .cm-fold-indicator, .collapse-indicator";
 const LINE_SELECTOR = ".cm-line";
 const BULLET_LINE_RE =
   /^([\t ]*)(?:[-+*]|\d+[.)])(?:[\t ]+|$)(?:\[(?: |x|X)\](?:[\t ]+|$))?(.*)$/;
@@ -36,6 +39,7 @@ interface BulletBranch {
 }
 
 interface BulletNoteOpenRequest extends BulletBranch {
+  ancestors?: BulletBranch[];
   folder: string;
   leaf: WorkspaceLeaf;
 }
@@ -80,6 +84,44 @@ export function isPathInLogseqFolder(
   return folder !== "" && filePath.startsWith(`${folder}/`);
 }
 
+export function getLogseqParentNotePath(
+  filePath: string,
+  configuredFolder: string,
+): string | null {
+  const logseqFolder = normalizeLogseqFolder(configuredFolder);
+  const normalizedFilePath = normalizePath(filePath);
+  const fileSeparator = normalizedFilePath.lastIndexOf("/");
+  if (logseqFolder === "" || fileSeparator < 0) {
+    return null;
+  }
+
+  const currentFolder = normalizedFilePath.slice(0, fileSeparator);
+  if (
+    currentFolder === logseqFolder ||
+    !currentFolder.startsWith(`${logseqFolder}/`)
+  ) {
+    return null;
+  }
+
+  const currentFolderName = currentFolder.slice(
+    currentFolder.lastIndexOf("/") + 1,
+  );
+  const currentFileName = normalizedFilePath.slice(fileSeparator + 1);
+  if (currentFileName !== `${currentFolderName}.md`) {
+    return null;
+  }
+
+  const parentSeparator = currentFolder.lastIndexOf("/");
+  if (parentSeparator < 0) {
+    return null;
+  }
+  const parentFolder = currentFolder.slice(0, parentSeparator);
+  const parentName = parentFolder.slice(parentFolder.lastIndexOf("/") + 1);
+  return parentName === ""
+    ? null
+    : normalizePath(`${parentFolder}/${parentName}.md`);
+}
+
 export function sanitizeBulletNoteName(value: string): string {
   let name = value
     .normalize("NFC")
@@ -109,8 +151,25 @@ function getWikiLinkLabel(value: string): string {
   return pageName || subpath?.replace(/^\^/u, "") || value;
 }
 
+function stripLeadingMarkdownSyntax(value: string): string {
+  let plainText = value;
+  let previousValue: string;
+
+  do {
+    previousValue = plainText;
+    plainText = plainText
+      .replace(/^\s{0,3}>\s*/u, "")
+      .replace(/^\s*#{1,6}\s*/u, "")
+      .replace(/^\s*\[![^\]\r\n]+\][+-]?\s*/iu, "")
+      .replace(/^\s*(?:[-+*]|\d+[.)])\s+/u, "")
+      .replace(/^\s*\[(?: |x|X)\]\s+/u, "");
+  } while (plainText !== previousValue);
+
+  return plainText.replace(/\s+#{1,6}\s*$/u, "");
+}
+
 export function getBulletNoteName(value: string): string {
-  const visibleText = value
+  const visibleText = stripLeadingMarkdownSyntax(value)
     .replace(/%%.*?%%/gu, " ")
     .replace(/!?\[\[([^\]]+)\]\]/gu, (_match, target: string) =>
       getWikiLinkLabel(target),
@@ -118,14 +177,45 @@ export function getBulletNoteName(value: string): string {
     .replace(/!\[([^\]]*)\]\([^)]*\)/gu, "$1")
     .replace(/\[([^\]]+)\]\([^)]*\)/gu, "$1")
     .replace(/\[([^\]]+)\]\[[^\]]*\]/gu, "$1")
+    .replace(/\[\^[^\]]+\]/gu, " ")
     .replace(/<(https?:\/\/[^>]+|mailto:[^>]+)>/giu, "$1")
     .replace(/<[^>]+>/gu, " ")
     .replace(/(`+)(.*?)\1/gu, "$2")
-    .replace(/(\*\*|__|~~)(.*?)\1/gu, "$2")
+    .replace(/\$\$([^\r\n]*?)\$\$/gu, "$1")
+    .replace(/\$([^$\r\n]+?)\$/gu, "$1")
+    .replace(/(\*\*|__|~~|==)(.*?)\1/gu, "$2")
     .replace(/(^|[\s([{])([*_])(.+?)\2(?=$|[\s)\]},.!?:;])/gu, "$1$3")
+    .replace(/(^|[\s([{])#(?=[\p{L}\p{N}_/-])/gu, "$1")
+    .replace(/\s+\^[\p{L}\p{N}_-]+\s*$/u, "")
     .replace(/\\([\\`*_[\]{}()#+\-.!>])/gu, "$1");
 
   return sanitizeBulletNoteName(visibleText);
+}
+
+function getNestedBulletAncestors(list: List): List[] {
+  const ancestors: List[] = [];
+  let ancestor = list.getParent();
+
+  while (ancestor?.getParent()) {
+    ancestors.unshift(ancestor);
+    ancestor = ancestor.getParent();
+  }
+
+  // The top-level item represents the current page, whose folder is already
+  // supplied by the source file. Only nested ancestors add destination levels.
+  return ancestors.slice(1);
+}
+
+export function getBulletAncestorNames(list: List): string[] | null {
+  const nestedNames = getNestedBulletAncestors(list).map((ancestor) =>
+    getBulletNoteName(ancestor.getLines()[0] ?? ""),
+  );
+  return nestedNames.some((name) => name === "") ? null : nestedNames;
+}
+
+function isTopLevelList(list: List): boolean {
+  const parent = list.getParent();
+  return parent !== null && parent.getParent() === null;
 }
 
 function parseBulletLine(line: string) {
@@ -161,6 +251,25 @@ export function extractBulletBranch(
     return null;
   }
 
+  return extractBulletBranchFromList(editor, list);
+}
+
+function extractBulletBranchFromList(
+  editor: MyEditor,
+  list: List,
+): BulletBranch | null {
+  const line = list.getFirstLineContentStart().line;
+  const sourceLine = editor.getLine(line);
+  const parsedLine = parseBulletLine(sourceLine);
+  if (!parsedLine) {
+    return null;
+  }
+
+  const name = getBulletNoteName(parsedLine.content);
+  if (name === "") {
+    return null;
+  }
+
   const endLine = list.getContentEndIncludingChildren().line;
   const lines: string[] = [];
   for (
@@ -182,11 +291,37 @@ export function extractBulletBranch(
   };
 }
 
+function extractBulletAncestorBranches(
+  editor: MyEditor,
+  list: List,
+): BulletBranch[] | null {
+  const branches = getNestedBulletAncestors(list).map((ancestor) =>
+    extractBulletBranchFromList(editor, ancestor),
+  );
+  return branches.some((branch) => branch === null)
+    ? null
+    : (branches as BulletBranch[]);
+}
+
 function getEditorLeaf(app: App, view: EditorView): WorkspaceLeaf {
   const leaf = app.workspace
     .getLeavesOfType("markdown")
     .find((candidate) => candidate.view.containerEl.contains(view.dom));
   return leaf ?? app.workspace.getLeaf(false);
+}
+
+async function openLogseqFile(leaf: WorkspaceLeaf, file: TFile): Promise<void> {
+  await leaf.openFile(file);
+
+  const view = leaf.view;
+  if (!(view instanceof MarkdownView) || view.file?.path !== file.path) {
+    return;
+  }
+
+  const editor = view.editor;
+  if (editor.getCursor().line === 0 && editor.lineCount() > 1) {
+    editor.setCursor({ line: 1, ch: 0 });
+  }
 }
 
 export class LogseqNoteNavigator {
@@ -195,20 +330,26 @@ export class LogseqNoteNavigator {
   constructor(private app: App) {}
 
   async open(request: BulletNoteOpenRequest): Promise<void> {
-    const folderPath = normalizePath(`${request.folder}/${request.name}`);
+    const folderPath = normalizePath(
+      [
+        request.folder,
+        ...(request.ancestors ?? []).map((ancestor) => ancestor.name),
+        request.name,
+      ].join("/"),
+    );
     const filePath = normalizePath(`${folderPath}/${request.name}.md`);
     const pending = this.inFlight.get(filePath);
     if (pending) {
       const file = await pending;
-      await request.leaf.openFile(file);
+      await openLogseqFile(request.leaf, file);
       return;
     }
 
-    const operation = this.openNow(folderPath, filePath, request);
+    const operation = this.openNow(filePath, request);
     this.inFlight.set(filePath, operation);
     try {
       const file = await operation;
-      await request.leaf.openFile(file);
+      await openLogseqFile(request.leaf, file);
     } finally {
       if (this.inFlight.get(filePath) === operation) {
         this.inFlight.delete(filePath);
@@ -217,10 +358,25 @@ export class LogseqNoteNavigator {
   }
 
   private async openNow(
-    folderPath: string,
     filePath: string,
     request: BulletNoteOpenRequest,
   ): Promise<TFile> {
+    let currentFolder = request.folder;
+    for (const ancestor of request.ancestors ?? []) {
+      currentFolder = normalizePath(`${currentFolder}/${ancestor.name}`);
+      await this.ensureFolder(currentFolder);
+      await this.ensureFile(
+        normalizePath(`${currentFolder}/${ancestor.name}.md`),
+        ancestor.content,
+      );
+    }
+
+    currentFolder = normalizePath(`${currentFolder}/${request.name}`);
+    await this.ensureFolder(currentFolder);
+    return this.ensureFile(filePath, request.content);
+  }
+
+  private async ensureFolder(folderPath: string): Promise<void> {
     let folder = this.app.vault.getAbstractFileByPath(folderPath);
     if (folder && !isVaultFolder(folder)) {
       throw new Error(`A file already exists at ${folderPath}`);
@@ -235,16 +391,25 @@ export class LogseqNoteNavigator {
         }
       }
     }
+  }
 
-    const existingFile = this.app.vault.getAbstractFileByPath(filePath);
-    let file: TFile;
-    if (existingFile) {
-      if (!isVaultFile(existingFile)) {
-        throw new Error(`A folder already exists at ${filePath}`);
+  private async ensureFile(filePath: string, content: string): Promise<TFile> {
+    let file = this.app.vault.getAbstractFileByPath(filePath);
+    if (file && !isVaultFile(file)) {
+      throw new Error(`A folder already exists at ${filePath}`);
+    }
+    if (!file) {
+      try {
+        file = await this.app.vault.create(filePath, content);
+      } catch (error) {
+        file = this.app.vault.getAbstractFileByPath(filePath);
+        if (!file || !isVaultFile(file)) {
+          throw error;
+        }
       }
-      file = existingFile;
-    } else {
-      file = await this.app.vault.create(filePath, request.content);
+    }
+    if (!file || !isVaultFile(file)) {
+      throw new Error(`Unable to create or open ${filePath}`);
     }
     return file;
   }
@@ -293,11 +458,11 @@ export class LogseqModePluginValue implements PluginValue {
     if (!this.isInScope() || !isElementLike(target)) {
       return null;
     }
-    const bullet = target.closest(BULLET_SELECTOR);
-    if (!bullet || !this.view.contentDOM.contains(bullet)) {
+    const marker = target.closest(LIST_MARKER_SELECTOR);
+    if (!marker || !this.view.contentDOM.contains(marker)) {
       return null;
     }
-    const lineElement = bullet.closest(LINE_SELECTOR);
+    const lineElement = marker.closest(LINE_SELECTOR);
     if (!lineElement) {
       return null;
     }
@@ -320,11 +485,18 @@ export class LogseqModePluginValue implements PluginValue {
   }
 
   private onMouseDown = (event: MouseEvent) => {
-    if (event.button !== 0 || this.getClickedLine(event.target) === null) {
+    if (
+      event.button !== 0 ||
+      !event.shiftKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      this.getClickedLine(event.target) === null
+    ) {
       return;
     }
     event.preventDefault();
-    event.stopPropagation();
+    event.stopImmediatePropagation();
   };
 
   private onClick = (event: MouseEvent) => {
@@ -333,7 +505,7 @@ export class LogseqModePluginValue implements PluginValue {
       event.altKey ||
       event.ctrlKey ||
       event.metaKey ||
-      event.shiftKey
+      !event.shiftKey
     ) {
       return;
     }
@@ -354,15 +526,51 @@ export class LogseqModePluginValue implements PluginValue {
     if (!editor || !folder) {
       return;
     }
-    const branch = extractBulletBranch(this.parser, editor, line);
-    if (!branch) {
+    const root = this.parser.parse(editor, { line, ch: 0 });
+    const list = root?.getListUnderLine(line);
+    if (!list || list.getFirstLineContentStart().line !== line) {
       new Notice("This bullet cannot be opened as a Logseq note.", 5000);
       return;
     }
 
     const leaf = getEditorLeaf(this.app, this.view);
+    if (isTopLevelList(list)) {
+      const parentNotePath = getLogseqParentNotePath(
+        sourceFile.path,
+        this.settings.logseqFolder,
+      );
+      if (parentNotePath) {
+        const parentFile = this.app.vault.getAbstractFileByPath(parentNotePath);
+        if (!parentFile || !isVaultFile(parentFile)) {
+          new Notice(`Parent note not found: ${parentNotePath}`, 5000);
+          return;
+        }
+        void openLogseqFile(leaf, parentFile).catch((error: unknown) => {
+          const detail = error instanceof Error ? error.message : String(error);
+          new Notice(`Unable to open the parent note: ${detail}`, 5000);
+        });
+        return;
+      }
+    }
+
+    const branch = extractBulletBranchFromList(editor, list);
+    if (!branch) {
+      new Notice("This bullet cannot be opened as a Logseq note.", 5000);
+      return;
+    }
+    const ancestors = extractBulletAncestorBranches(editor, list);
+    if (!ancestors) {
+      new Notice("An ancestor bullet cannot be used as a folder name.", 5000);
+      return;
+    }
+
     void this.navigator
-      .open({ ...branch, folder, leaf })
+      .open({
+        ...branch,
+        ...(ancestors.length > 0 ? { ancestors } : {}),
+        folder,
+        leaf,
+      })
       .catch((error: unknown) => {
         const detail = error instanceof Error ? error.message : String(error);
         new Notice(`Unable to open the bullet note: ${detail}`, 5000);
