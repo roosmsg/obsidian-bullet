@@ -174,7 +174,7 @@ const SETTING_GROUPS = [
     items: [
       {
         name: "Folder for Logseq mode",
-        desc: "Shift+click a list bullet in this vault folder or its subfolders to navigate file-backed outlines. Live Preview can create missing notes; Reading view only opens notes that already exist. Normal clicks keep Obsidian's fold and unfold behavior.",
+        desc: "Shift+click a list bullet in this vault folder or its subfolders to navigate file-backed outlines. The 0-level master-root item does nothing; level 1 and deeper items can create notes in Live Preview or open existing notes in Reading view. Normal clicks keep Obsidian's fold and unfold behavior.",
         control: {
           type: "text",
           key: "logseqFolder",

@@ -127,6 +127,41 @@ export function getLogseqParentNotePath(
     : normalizePath(`${parentFolder}/${parentName}.md`);
 }
 
+function getExistingLogseqParentFile(
+  app: App,
+  filePath: string,
+  configuredFolder: string,
+): TFile | null {
+  const logseqFolder = normalizeLogseqFolder(configuredFolder);
+  const normalizedFilePath = normalizePath(filePath);
+  const expectedParentPath = getLogseqParentNotePath(
+    normalizedFilePath,
+    configuredFolder,
+  );
+  if (logseqFolder === "" || !expectedParentPath) {
+    return null;
+  }
+
+  const fileSeparator = normalizedFilePath.lastIndexOf("/");
+  const currentFolder = normalizedFilePath.slice(0, fileSeparator);
+  const parentSeparator = currentFolder.lastIndexOf("/");
+  const parentFolder = currentFolder.slice(0, parentSeparator);
+  if (parentFolder === logseqFolder) {
+    const rootFolder = app.vault.getAbstractFileByPath(logseqFolder);
+    if (!rootFolder || !isVaultFolder(rootFolder)) {
+      return null;
+    }
+    const rootFiles = rootFolder.children.filter(
+      (child): child is TFile =>
+        isVaultFile(child) && child.extension.toLowerCase() === "md",
+    );
+    return rootFiles.length === 1 ? rootFiles[0] : null;
+  }
+
+  const expectedParent = app.vault.getAbstractFileByPath(expectedParentPath);
+  return expectedParent && isVaultFile(expectedParent) ? expectedParent : null;
+}
+
 export function sanitizeBulletNoteName(value: string): string {
   let name = value
     .normalize("NFC")
@@ -530,12 +565,26 @@ class LogseqReadingNavigation extends MarkdownRenderChild {
     }
 
     const ancestors = getReadingListAncestors(this.containerEl, listItem);
+    if (
+      ancestors.length === 0 &&
+      sourceFile.parent.path ===
+        normalizeLogseqFolder(this.settings.logseqFolder)
+    ) {
+      return null;
+    }
     let destinationPath: string | null = null;
     if (ancestors.length === 0) {
-      destinationPath = getLogseqParentNotePath(
+      const parentNotePath = getLogseqParentNotePath(
         sourceFile.path,
         this.settings.logseqFolder,
       );
+      if (parentNotePath) {
+        return getExistingLogseqParentFile(
+          this.app,
+          sourceFile.path,
+          this.settings.logseqFolder,
+        );
+      }
     }
 
     if (!destinationPath) {
@@ -777,8 +826,12 @@ export class LogseqModePluginValue implements PluginValue {
         this.settings.logseqFolder,
       );
       if (parentNotePath) {
-        const parentFile = this.app.vault.getAbstractFileByPath(parentNotePath);
-        if (!parentFile || !isVaultFile(parentFile)) {
+        const parentFile = getExistingLogseqParentFile(
+          this.app,
+          sourceFile.path,
+          this.settings.logseqFolder,
+        );
+        if (!parentFile) {
           new Notice(`Parent note not found: ${parentNotePath}`, 5000);
           return;
         }
@@ -798,6 +851,12 @@ export class LogseqModePluginValue implements PluginValue {
     const ancestors = extractBulletAncestorBranches(editor, list);
     if (!ancestors) {
       new Notice("An ancestor bullet cannot be used as a folder name.", 5000);
+      return;
+    }
+    if (
+      isTopLevelList(list) &&
+      folder === normalizeLogseqFolder(this.settings.logseqFolder)
+    ) {
       return;
     }
 
