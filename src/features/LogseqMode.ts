@@ -1,5 +1,6 @@
 import {
   App,
+  MarkdownRenderChild,
   MarkdownView,
   Notice,
   Plugin,
@@ -23,8 +24,12 @@ import { Settings } from "../services/Settings";
 export const LOGSEQ_MODE_CLASS = "bullet-plugin-logseq-mode";
 export const MAX_BULLET_NOTE_NAME_LENGTH = 25;
 
+const LOGSEQ_READING_NAVIGABLE_CLASS = "bullet-plugin-logseq-reading-navigable";
 const LIST_MARKER_SELECTOR =
   ".list-bullet, .cm-formatting-list, .cm-fold-indicator, .collapse-indicator";
+const READING_MARKER_SELECTOR = ".list-bullet, .list-collapse-indicator";
+const READING_NON_LABEL_SELECTOR =
+  "ol, ul, .list-bullet, .list-collapse-indicator, input[type='checkbox']";
 const LINE_SELECTOR = ".cm-line";
 const BULLET_LINE_RE =
   /^([\t ]*)(?:[-+*]|\d+[.)])(?:[\t ]+|$)(?:\[(?: |x|X)\](?:[\t ]+|$))?(.*)$/;
@@ -310,6 +315,23 @@ function getEditorLeaf(app: App, view: EditorView): WorkspaceLeaf {
   return leaf ?? app.workspace.getLeaf(false);
 }
 
+function getReadingLeaf(
+  app: App,
+  element: Element,
+  sourcePath: string,
+): WorkspaceLeaf | null {
+  return (
+    app.workspace
+      .getLeavesOfType("markdown")
+      .find(
+        (candidate) =>
+          candidate.view instanceof MarkdownView &&
+          candidate.view.file?.path === sourcePath &&
+          candidate.view.containerEl.contains(element),
+      ) ?? null
+  );
+}
+
 async function openLogseqFile(leaf: WorkspaceLeaf, file: TFile): Promise<void> {
   await leaf.openFile(file);
 
@@ -328,6 +350,214 @@ async function openLogseqFile(leaf: WorkspaceLeaf, file: TFile): Promise<void> {
       editor.setCursor({ line, ch: 0 });
       return;
     }
+  }
+}
+
+function isNavigationClick(event: MouseEvent): boolean {
+  return (
+    event.button === 0 &&
+    event.shiftKey &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey
+  );
+}
+
+function stopNavigationEvent(event: MouseEvent): void {
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}
+
+function getReadingListItem(
+  containerEl: HTMLElement,
+  target: EventTarget | null,
+): HTMLElement | null {
+  if (!isElementLike(target)) {
+    return null;
+  }
+
+  const marker = target.closest(READING_MARKER_SELECTOR);
+  const listItem = (marker ?? target).closest("li");
+  if (!listItem || !containerEl.contains(listItem)) {
+    return null;
+  }
+
+  // CSS ::marker clicks target the list item itself. Content clicks normally
+  // target a child element and should keep their standard Shift-click action.
+  return marker || target === listItem ? (listItem as HTMLElement) : null;
+}
+
+function getReadingListItemName(listItem: HTMLElement): string {
+  const label = listItem.cloneNode(true) as HTMLElement;
+  label
+    .querySelectorAll(READING_NON_LABEL_SELECTOR)
+    .forEach((element) => element.remove());
+  return getBulletNoteName(label.textContent ?? "");
+}
+
+function getReadingListAncestors(
+  containerEl: HTMLElement,
+  listItem: HTMLElement,
+): HTMLElement[] {
+  const ancestors: HTMLElement[] = [];
+  let ancestor = listItem.parentElement?.closest("li") as HTMLElement | null;
+  while (ancestor && containerEl.contains(ancestor)) {
+    ancestors.unshift(ancestor);
+    ancestor = ancestor.parentElement?.closest("li") as HTMLElement | null;
+  }
+  return ancestors;
+}
+
+class LogseqReadingNavigation extends MarkdownRenderChild {
+  constructor(
+    containerEl: HTMLElement,
+    private app: App,
+    private settings: Settings,
+    private sourcePath: string,
+  ) {
+    super(containerEl);
+  }
+
+  onload(): void {
+    this.updateNavigationTargets();
+    this.settings.onChange(["logseqFolder"], this.updateNavigationTargets);
+    this.registerDomEvent(
+      this.containerEl,
+      "mousedown",
+      this.onMouseDown,
+      true,
+    );
+    this.registerDomEvent(this.containerEl, "click", this.onClick, true);
+    this.registerDomEvent(
+      this.containerEl,
+      "mouseover",
+      this.onMouseOver,
+      true,
+    );
+  }
+
+  onunload(): void {
+    this.settings.removeCallback(this.updateNavigationTargets);
+    this.getListItems().forEach((listItem) =>
+      listItem.classList.remove(LOGSEQ_READING_NAVIGABLE_CLASS),
+    );
+  }
+
+  private getListItems(): HTMLElement[] {
+    const listItems = Array.from(
+      this.containerEl.querySelectorAll<HTMLElement>("li"),
+    );
+    if (this.containerEl.matches("li")) {
+      listItems.unshift(this.containerEl);
+    }
+    return listItems;
+  }
+
+  private updateNavigationTargets = () => {
+    const inScope = isPathInLogseqFolder(
+      this.sourcePath,
+      this.settings.logseqFolder,
+    );
+    this.getListItems().forEach((listItem) => {
+      listItem.classList.toggle(
+        LOGSEQ_READING_NAVIGABLE_CLASS,
+        inScope && this.getExistingDestination(listItem) !== null,
+      );
+    });
+  };
+
+  private onMouseOver = (event: MouseEvent) => {
+    if (!isPathInLogseqFolder(this.sourcePath, this.settings.logseqFolder)) {
+      return;
+    }
+    const listItem = getReadingListItem(this.containerEl, event.target);
+    if (!listItem) {
+      return;
+    }
+    listItem.classList.toggle(
+      LOGSEQ_READING_NAVIGABLE_CLASS,
+      this.getExistingDestination(listItem) !== null,
+    );
+  };
+
+  private onMouseDown = (event: MouseEvent) => {
+    if (!this.getNavigationTarget(event)) {
+      return;
+    }
+    stopNavigationEvent(event);
+  };
+
+  private onClick = (event: MouseEvent) => {
+    const listItem = this.getNavigationTarget(event);
+    if (!listItem) {
+      return;
+    }
+    stopNavigationEvent(event);
+    void this.openExistingDestination(listItem).catch((error: unknown) => {
+      const detail = error instanceof Error ? error.message : String(error);
+      new Notice(`Unable to open the outline note: ${detail}`, 5000);
+    });
+  };
+
+  private getNavigationTarget(event: MouseEvent): HTMLElement | null {
+    if (
+      !isNavigationClick(event) ||
+      !isPathInLogseqFolder(this.sourcePath, this.settings.logseqFolder)
+    ) {
+      return null;
+    }
+    return getReadingListItem(this.containerEl, event.target);
+  }
+
+  private async openExistingDestination(listItem: HTMLElement): Promise<void> {
+    const destination = this.getExistingDestination(listItem);
+    if (!destination) {
+      return;
+    }
+
+    const leaf = getReadingLeaf(this.app, this.containerEl, this.sourcePath);
+    if (!leaf) {
+      return;
+    }
+
+    await openLogseqFile(leaf, destination);
+  }
+
+  private getExistingDestination(listItem: HTMLElement): TFile | null {
+    const sourceFile = this.app.vault.getAbstractFileByPath(this.sourcePath);
+    if (!sourceFile || !isVaultFile(sourceFile) || !sourceFile.parent) {
+      return null;
+    }
+
+    const ancestors = getReadingListAncestors(this.containerEl, listItem);
+    let destinationPath: string | null = null;
+    if (ancestors.length === 0) {
+      destinationPath = getLogseqParentNotePath(
+        sourceFile.path,
+        this.settings.logseqFolder,
+      );
+    }
+
+    if (!destinationPath) {
+      const ancestorNames = ancestors
+        .slice(1)
+        .map((ancestor) => getReadingListItemName(ancestor));
+      const name = getReadingListItemName(listItem);
+      if (name === "" || ancestorNames.some((ancestor) => ancestor === "")) {
+        return null;
+      }
+      destinationPath = normalizePath(
+        [sourceFile.parent.path, ...ancestorNames, name, `${name}.md`].join(
+          "/",
+        ),
+      );
+    }
+
+    const destination = this.app.vault.getAbstractFileByPath(destinationPath);
+    if (!destination || !isVaultFile(destination)) {
+      return null;
+    }
+    return destination;
   }
 }
 
@@ -611,6 +841,16 @@ export class LogseqMode implements Feature {
           ),
       ),
     ]);
+    this.plugin.registerMarkdownPostProcessor((element, context) => {
+      context.addChild(
+        new LogseqReadingNavigation(
+          element,
+          this.plugin.app,
+          this.settings,
+          context.sourcePath,
+        ),
+      );
+    });
   }
 
   async unload(): Promise<void> {}

@@ -397,6 +397,34 @@ body:not(.bullet-plugin-dragging)
   transform: scale(1.35);
 }
 
+body:not(.bullet-plugin-dragging)
+  .markdown-rendered
+  li.bullet-plugin-logseq-reading-navigable
+  > :is(.list-bullet, .list-collapse-indicator) {
+  cursor: pointer;
+}
+
+body:not(.bullet-plugin-dragging)
+  .markdown-rendered
+  li.bullet-plugin-logseq-reading-navigable
+  > .list-bullet::after {
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+body:not(.bullet-plugin-dragging)
+  .markdown-rendered
+  li.bullet-plugin-logseq-reading-navigable:has(
+    > :is(.list-bullet, .list-collapse-indicator):hover
+  )
+  > .list-bullet::after {
+  background-color: var(--interactive-accent);
+  box-shadow: 0 0 0 3px hsla(var(--interactive-accent-hsl), 0.25);
+  transform: scale(1.35);
+}
+
 body.bullet-plugin-dnd:not(.bullet-plugin-dragging)
   .markdown-source-view.mod-cm6
   .cm-formatting-list,

@@ -17,6 +17,11 @@ import {
 jest.mock(
   "obsidian",
   () => ({
+    MarkdownRenderChild: class MarkdownRenderChild {
+      constructor(public containerEl: HTMLElement) {}
+
+      registerDomEvent() {}
+    },
     MarkdownView: class MarkdownView {},
     Notice: jest.fn(),
     normalizePath: (path: string) =>

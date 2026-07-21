@@ -150,6 +150,8 @@ Set **Folder for Logseq mode** to a vault-relative folder such as `Bulletlist` t
 
 Shift+clicking `Task Beta` in `Bulletlist/Bulletlist.md` creates `Bulletlist/Task Beta/Task Beta.md` and initializes it with the clicked item and all of its children. Shift+clicking it again opens the existing file without replacing later edits. A normal click keeps Obsidian's native fold/unfold behavior. Bullets in the new file behave the same way, creating the next level inside `Bulletlist/Task Beta/`.
 
+In Reading view, Shift+click only navigates to notes that already exist; it never creates folders or files. Existing destinations receive the same bullet hover highlight as Live Preview. If the expected child note is absent, nothing happens and no navigation highlight is shown. Plain clicks retain Reading view's native fold/unfold behavior.
+
 Nested items keep their complete outline path even when opened directly from the root note. For example, Shift+clicking `Child 1` under `Beta test` creates `Bulletlist/Beta test/Child 1/Child 1.md`. Every intermediate list level becomes a folder; the top-level item represents the current page and is not duplicated.
 
 In a generated note, its first bullet links back to the parent note. Shift+clicking `- Child 1` inside `Child 1.md` opens `Beta test/Beta test.md`. Opening a deeply nested item directly also creates any missing intermediate parent notes, preserving each ancestor branch and its Markdown syntax.
