@@ -5,6 +5,7 @@ import { StateEffect, StateField } from "@codemirror/state";
 import { Decoration, DecorationSet, EditorView } from "@codemirror/view";
 
 import { Feature } from "./Feature";
+import { ListMarkerInteractionGuard } from "./ListMarkerInteractionGuard";
 
 import { MyEditor, getEditorFromState } from "../editor";
 import { getObsidianDomWindow } from "../obsidianDom";
@@ -35,6 +36,7 @@ export class DragAndDrop implements Feature {
     private obisidian: ObsidianSettings,
     private parser: Parser,
     private operationPerformer: OperationPerformer,
+    private listMarkerInteractionGuard = new ListMarkerInteractionGuard(),
   ) {}
 
   async load() {
@@ -175,6 +177,7 @@ export class DragAndDrop implements Feature {
 
     e.preventDefault();
     e.stopPropagation();
+    this.listMarkerInteractionGuard.beginPointerInteraction();
 
     this.preStart = {
       x: e.x,
@@ -247,6 +250,7 @@ export class DragAndDrop implements Feature {
     }
 
     this.state = state;
+    this.listMarkerInteractionGuard.markDragStarted();
     this.highlightDraggingLines();
   }
 

@@ -329,7 +329,7 @@ class LinesIterator {
 const currentPlatform = process.platform;
 
 module.exports.process = function process(sourceText, sourcePath, options) {
-  const l = new LinesIterator(sourceText.split("\n"));
+  const l = new LinesIterator(sourceText.split(/\r?\n/u));
   const s = (v) => JSON.stringify(v);
 
   const name = sourcePath.replace(options.config.cwd + "/", "");

@@ -639,10 +639,12 @@ describe("ObsidianBulletPluginWithTests", () => {
     ["pasteText", 1],
     ["drag", { from: { line: 0, ch: "0" } }],
     ["move", { to: { line: 0, ch: 0 }, offsetX: "0", offsetY: 0 }],
+    ["setSetting", { k: "bulletThreading", v: "true" }],
     ["setSetting", { k: "outerListLines", v: "true" }],
     ["setSetting", { k: "listLineAction", v: true }],
     ["setSetting", { k: "mobileRightFoldControls", v: "true" }],
     ["setSetting", { k: "keepBodyTextInBullets", v: "true" }],
+    ["setSetting", { k: "logseqFolder", v: true }],
     ["clickGuide", { line: 0, kind: "middle", prefix: "" }],
   ])("rejects malformed %s command data", async (type, data) => {
     const plugin = Object.create(

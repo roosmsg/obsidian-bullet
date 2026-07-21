@@ -41,6 +41,28 @@ describe("ObsidianBulletPlugin wiring", () => {
     expect(source).toContain("await feature.unload();");
   });
 
+  test("loads bullet threading as an independent appearance feature", () => {
+    const source = readFileSync(
+      join(__dirname, "../ObsidianBulletPlugin.ts"),
+      "utf-8",
+    );
+
+    expect(source).toContain("new BulletThreading(this, this.settings)");
+  });
+
+  test("loads folder-scoped Logseq navigation with the drag interaction guard", () => {
+    const source = readFileSync(
+      join(__dirname, "../ObsidianBulletPlugin.ts"),
+      "utf-8",
+    );
+
+    expect(source).toContain("new LogseqMode(");
+    expect(source).toContain("const listMarkerInteractionGuard");
+    expect(source).toMatch(
+      /new LogseqMode\([\s\S]*?listMarkerInteractionGuard,[\s\S]*?new DragAndDrop\([\s\S]*?listMarkerInteractionGuard,/,
+    );
+  });
+
   test("loads the bullet typing guard before selection behavior", () => {
     const source = readFileSync(
       join(__dirname, "../ObsidianBulletPlugin.ts"),

@@ -5,7 +5,12 @@ import {
   unfoldEffect,
 } from "@codemirror/language";
 
-import { MyEditor, getEditorFromState, getFoldedLinesFromState } from "..";
+import {
+  MyEditor,
+  getEditorFromState,
+  getFileFromState,
+  getFoldedLinesFromState,
+} from "..";
 
 jest.mock(
   "obsidian",
@@ -36,6 +41,25 @@ describe("getEditorFromState", () => {
     };
 
     expect(getEditorFromState(state as never)).toBeNull();
+  });
+});
+
+describe("getFileFromState", () => {
+  test("returns the file associated with this editor state", () => {
+    const file = { path: "Bulletlist/Task Beta/Task Beta.md" };
+    const state = {
+      field: jest.fn().mockReturnValue({ file }),
+    };
+
+    expect(getFileFromState(state as never)).toBe(file);
+  });
+
+  test("returns null before editor information is initialized", () => {
+    const state = {
+      field: jest.fn().mockReturnValue(undefined),
+    };
+
+    expect(getFileFromState(state as never)).toBeNull();
   });
 });
 

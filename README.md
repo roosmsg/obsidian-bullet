@@ -15,6 +15,7 @@ Requires Obsidian 1.12.7 or later. Bullet supports desktop and mobile.
 - **Focused navigation:** keep the caret in editable content and away from hidden bullet or checkbox markup.
 - **Visible structure:** connect nested items with indentation guides, add guides beside root list chunks, and fold branches from the guides themselves.
 - **Mobile-friendly folding:** move native list and heading fold controls to the right edge in Live Preview.
+- **File-backed outlines:** optionally make bullets in one vault folder clickable, creating nested Markdown notes that preserve the clicked branch.
 
 Automatic editing, appearance, folding, and drag-and-drop behavior can be adjusted from **Settings → Bullet**.
 
@@ -133,6 +134,7 @@ All settings are under **Settings → Bullet**.
 | -------------------------- | :-----: | -------------------------------------------------------------------------------------------------- |
 | **Style list bullets**     |   On    | Use Bullet's marker spacing, larger dots, and parent hover feedback with active theme colors.      |
 | **Enhance vertical lines** |   On    | Strengthen indentation guides and use a continuous rounded hover.                                  |
+| **Show bullet threading**  |   Off   | Highlight the nested path to the hovered item in the editor, reading view, and Outline.            |
 
 ### Folding
 
@@ -141,6 +143,14 @@ All settings are under **Settings → Bullet**.
 | **Draw outer list lines**                      |   On    | Draw a guide beside each contiguous root list chunk.                       |
 | **Fold lists from vertical indentation lines** |   On    | Make visible guides clickable for folding.                                 |
 | **Show fold controls on the right on mobile**  |   On    | Move native list and heading controls to the right in mobile Live Preview. |
+
+### Logseq mode
+
+Set **Folder for Logseq mode** to a vault-relative folder such as `Bulletlist` to make Live Preview bullets in that folder and all of its subfolders clickable. The setting is empty by default, so the mode is opt-in.
+
+Clicking `Task Beta` in `Bulletlist/Bulletlist.md` creates `Bulletlist/Task Beta/Task Beta.md` and initializes it with the clicked item and all of its children. Clicking it again opens the existing file without replacing later edits. Bullets in the new file behave the same way, creating the next level inside `Bulletlist/Task Beta/`.
+
+Generated folder and file names use the first 25 valid characters of the bullet text.
 
 ### Advanced
 
@@ -151,7 +161,7 @@ All settings are under **Settings → Bullet**.
 ## Compatibility
 
 - Bullet requires Obsidian 1.12.7 or later and is available on desktop and mobile.
-- The editing enhancements work in Obsidian's Markdown editor. Vertical-line folding, outer guides, and right-side mobile fold controls are designed for Live Preview.
+- The editing enhancements work in Obsidian's Markdown editor. Logseq mode, vertical-line folding, outer guides, and right-side mobile fold controls are designed for Live Preview.
 - The fold and unfold commands require Obsidian's **Fold indent** editor setting to be enabled.
 
 ## Support and credits

@@ -155,6 +155,18 @@ describe("test config helpers", () => {
     );
   });
 
+  test("transforms Markdown specs with Windows line endings", () => {
+    const source = ["# types a character", "", '- typeText: "a"'].join("\r\n");
+
+    const { code } = mdSpecTransformer.process(
+      source,
+      "/repo/specs/windows-line-endings.spec.md",
+      { config: { cwd: "/repo" } },
+    );
+
+    expect(code).toContain('await typeText("a");');
+  });
+
   test("preserves shorter Markdown fences inside a longer state fence", () => {
     const source = [
       "# types inside a fenced block",

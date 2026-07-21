@@ -3,6 +3,7 @@ import { Plugin } from "obsidian";
 import { ArrowLeftAndCtrlArrowLeftBehaviourOverride } from "./features/ArrowLeftAndCtrlArrowLeftBehaviourOverride";
 import { BackspaceBehaviourOverride } from "./features/BackspaceBehaviourOverride";
 import { BetterListsStyles } from "./features/BetterListsStyles";
+import { BulletThreading } from "./features/BulletThreading";
 import { BulletTypingGuard } from "./features/BulletTypingGuard";
 import { CtrlAAndCmdABehaviourOverride } from "./features/CtrlAAndCmdABehaviourOverride";
 import { DeleteBehaviourOverride } from "./features/DeleteBehaviourOverride";
@@ -10,8 +11,10 @@ import { DragAndDrop } from "./features/DragAndDrop";
 import { EditorSelectionsBehaviourOverride } from "./features/EditorSelectionsBehaviourOverride";
 import { EnterBehaviourOverride } from "./features/EnterBehaviourOverride";
 import { Feature } from "./features/Feature";
+import { ListMarkerInteractionGuard } from "./features/ListMarkerInteractionGuard";
 import { ListsFoldingCommands } from "./features/ListsFoldingCommands";
 import { ListsMovementCommands } from "./features/ListsMovementCommands";
+import { LogseqMode } from "./features/LogseqMode";
 import { MetaBackspaceBehaviourOverride } from "./features/MetaBackspaceBehaviourOverride";
 import { MobileRightFoldControls } from "./features/MobileRightFoldControls";
 import { NativeFoldScroll } from "./features/NativeFoldScroll";
@@ -53,6 +56,7 @@ export default class ObsidianBulletPlugin extends Plugin {
 
     this.imeDetector = new IMEDetector();
     await this.imeDetector.load();
+    const listMarkerInteractionGuard = new ListMarkerInteractionGuard();
 
     this.features = [
       // service features
@@ -148,12 +152,23 @@ export default class ObsidianBulletPlugin extends Plugin {
       // features based on settings.betterListsStyles
       new BetterListsStyles(this, this.settings),
 
+      // features based on settings.bulletThreading
+      new BulletThreading(this, this.settings),
+
       // features based on settings.mobileRightFoldControls
       new MobileRightFoldControls(this, this.settings),
       new NativeFoldScroll(this),
 
       // vertical-line folding and outer list guides
       new VerticalLines(this, this.settings, this.parser),
+
+      // file-backed navigation for configured outline folders
+      new LogseqMode(
+        this,
+        this.settings,
+        this.parser,
+        listMarkerInteractionGuard,
+      ),
 
       // features based on settings.dragAndDrop
       new DragAndDrop(
@@ -162,6 +177,7 @@ export default class ObsidianBulletPlugin extends Plugin {
         this.obsidianSettings,
         this.parser,
         this.operationPerformer,
+        listMarkerInteractionGuard,
       ),
     ];
 

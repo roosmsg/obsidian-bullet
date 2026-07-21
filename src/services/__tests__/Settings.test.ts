@@ -27,7 +27,9 @@ test("enables outer vertical lines when saved data predates the setting", async 
     | "keepBodyTextInBullets"
     | "outerListLines"
     | "enhanceVerticalLineHover"
+    | "bulletThreading"
     | "mobileRightFoldControls"
+    | "logseqFolder"
   >;
   const storage = {
     loadData: jest.fn(async () => saved as SettingsObject),
@@ -100,6 +102,62 @@ test("enables mobile right fold controls when saved data predates the setting", 
   expect(settings.mobileRightFoldControls).toBe(true);
 });
 
+test("disables bullet threading when saved data predates the setting", async () => {
+  const settings = new Settings({
+    loadData: jest.fn(async () => ({}) as SettingsObject),
+    saveData: jest.fn(async () => undefined),
+  });
+
+  await settings.load();
+
+  expect(settings.bulletThreading).toBe(false);
+});
+
+test("loads and saves the bullet threading preference", async () => {
+  const saveData = jest.fn(async () => undefined);
+  const settings = new Settings({
+    loadData: jest.fn(async () => ({ bulletThreading: true })),
+    saveData,
+  });
+
+  await settings.load();
+  settings.bulletThreading = false;
+  await settings.save();
+
+  expect(settings.bulletThreading).toBe(false);
+  expect(saveData).toHaveBeenCalledWith(
+    expect.objectContaining({ bulletThreading: false }),
+  );
+});
+
+test("disables Logseq mode when saved data predates the folder setting", async () => {
+  const settings = new Settings({
+    loadData: jest.fn(async () => ({}) as SettingsObject),
+    saveData: jest.fn(async () => undefined),
+  });
+
+  await settings.load();
+
+  expect(settings.logseqFolder).toBe("");
+});
+
+test("loads and saves the configured Logseq folder", async () => {
+  const saveData = jest.fn(async () => undefined);
+  const settings = new Settings({
+    loadData: jest.fn(async () => ({ logseqFolder: "Bulletlist" })),
+    saveData,
+  });
+
+  await settings.load();
+  settings.logseqFolder = "Outlines";
+  await settings.save();
+
+  expect(settings.logseqFolder).toBe("Outlines");
+  expect(saveData).toHaveBeenCalledWith(
+    expect.objectContaining({ logseqFolder: "Outlines" }),
+  );
+});
+
 describe("change notifications", () => {
   function createSettings() {
     return new Settings({
@@ -170,6 +228,30 @@ describe("change notifications", () => {
     expect(callback.mock.calls[0]?.[0].keys).toEqual(
       new Set(["enhanceVerticalLineHover"]),
     );
+  });
+
+  test("notifies subscribers when bullet threading changes", () => {
+    const settings = createSettings();
+    const callback = jest.fn<void, [SettingsChange]>();
+    settings.onChange(["bulletThreading"], callback);
+
+    settings.bulletThreading = true;
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(callback.mock.calls[0]?.[0].keys).toEqual(
+      new Set(["bulletThreading"]),
+    );
+  });
+
+  test("notifies subscribers when the Logseq folder changes", () => {
+    const settings = createSettings();
+    const callback = jest.fn<void, [SettingsChange]>();
+    settings.onChange(["logseqFolder"], callback);
+
+    settings.logseqFolder = "Bulletlist";
+
+    expect(callback).toHaveBeenCalledTimes(1);
+    expect(callback.mock.calls[0]?.[0].keys).toEqual(new Set(["logseqFolder"]));
   });
 
   test("notifies subscribers when body text enforcement changes", async () => {

@@ -17,6 +17,7 @@ jest.mock(
       desc = "";
       heading = false;
       dropdown?: FakeDropdownRecord;
+      text?: FakeTextRecord;
       toggle?: FakeToggleRecord;
 
       constructor() {
@@ -82,6 +83,31 @@ jest.mock(
         this.toggle = record;
         return this;
       }
+
+      addText(configure: (text: FakeText) => void) {
+        const record: FakeTextRecord = {
+          placeholder: "",
+          value: "",
+          callbacks: [],
+        };
+        const text: FakeText = {
+          setPlaceholder(placeholder) {
+            record.placeholder = placeholder;
+            return this;
+          },
+          setValue(value) {
+            record.value = value;
+            return this;
+          },
+          onChange(callback) {
+            record.callbacks.push(callback);
+            return this;
+          },
+        };
+        configure(text);
+        this.text = record;
+        return this;
+      }
     },
   }),
   { virtual: true },
@@ -92,6 +118,7 @@ interface FakeSetting {
   desc: string;
   heading: boolean;
   dropdown?: FakeDropdownRecord;
+  text?: FakeTextRecord;
   toggle?: FakeToggleRecord;
 }
 
@@ -117,6 +144,18 @@ interface FakeToggle {
   onChange(callback: (value: boolean) => Promise<void>): FakeToggle;
 }
 
+interface FakeTextRecord {
+  placeholder: string;
+  value: string;
+  callbacks: Array<(value: string) => Promise<void>>;
+}
+
+interface FakeText {
+  setPlaceholder(value: string): FakeText;
+  setValue(value: string): FakeText;
+  onChange(callback: (value: string) => Promise<void>): FakeText;
+}
+
 type FakeControl =
   | {
       type: "dropdown";
@@ -125,6 +164,10 @@ type FakeControl =
     }
   | {
       type: "toggle";
+      key: string;
+    }
+  | {
+      type: "text";
       key: string;
     };
 
@@ -157,9 +200,11 @@ function makeSettings() {
     overrideSelectAllBehaviour: true,
     betterListsStyles: true,
     enhancedVerticalLineHover: true,
+    bulletThreading: false,
     outerVerticalLines: true,
     verticalLinesAction: "toggle-folding",
     mobileRightFoldControls: true,
+    logseqFolder: "Bulletlist",
     dragAndDrop: true,
     debug: false,
     save: jest.fn(async () => undefined),
@@ -196,6 +241,7 @@ describe("SettingsTab", () => {
       "Editing",
       "Appearance",
       "Folding",
+      "Logseq mode",
       "Advanced",
     ]);
     expect(
@@ -210,12 +256,13 @@ describe("SettingsTab", () => {
         "Enhance the Ctrl+A or Cmd+A behavior",
         "Drag-and-Drop",
       ],
-      ["Style list bullets", "Enhance vertical lines"],
+      ["Style list bullets", "Enhance vertical lines", "Show bullet threading"],
       [
         "Draw outer list lines",
         "Fold lists from vertical indentation lines",
         "Show fold controls on the right on mobile",
       ],
+      ["Folder for Logseq mode"],
       ["Debug mode"],
     ]);
     expect(groups[0]?.items[0]).toEqual({
@@ -269,17 +316,23 @@ describe("SettingsTab", () => {
     );
     expect(tab.getControlValue("keepBodyTextInBullets")).toBe(false);
     expect(tab.getControlValue("enhancedVerticalLineHover")).toBe(true);
+    expect(tab.getControlValue("bulletThreading")).toBe(false);
+    expect(tab.getControlValue("logseqFolder")).toBe("Bulletlist");
 
     await tab.setControlValue("verticalLinesActionEnabled", false);
     await tab.setControlValue("keepCursorWithinContent", "bullet-only");
     await tab.setControlValue("keepBodyTextInBullets", true);
     await tab.setControlValue("enhancedVerticalLineHover", false);
+    await tab.setControlValue("bulletThreading", true);
+    await tab.setControlValue("logseqFolder", "Outlines");
 
     expect(settings.verticalLinesAction).toBe("none");
     expect(settings.keepCursorWithinContent).toBe("bullet-only");
     expect(settings.keepBodyTextInBullets).toBe(true);
     expect(settings.enhancedVerticalLineHover).toBe(false);
-    expect(settings.save).toHaveBeenCalledTimes(4);
+    expect(settings.bulletThreading).toBe(true);
+    expect(settings.logseqFolder).toBe("Outlines");
+    expect(settings.save).toHaveBeenCalledTimes(6);
   });
 
   test("rejects invalid declarative control values", async () => {
@@ -289,6 +342,9 @@ describe("SettingsTab", () => {
       tab.setControlValue("keepCursorWithinContent", "invalid"),
     ).rejects.toThrow("keepCursorWithinContent");
     await expect(tab.setControlValue("debug", "true")).rejects.toThrow("debug");
+    await expect(tab.setControlValue("logseqFolder", true)).rejects.toThrow(
+      "logseqFolder",
+    );
   });
 
   test("keeps the imperative display fallback for pre-1.13 Obsidian", async () => {
@@ -314,10 +370,13 @@ describe("SettingsTab", () => {
       "heading:Appearance",
       "setting:Style list bullets",
       "setting:Enhance vertical lines",
+      "setting:Show bullet threading",
       "heading:Folding",
       "setting:Draw outer list lines",
       "setting:Fold lists from vertical indentation lines",
       "setting:Show fold controls on the right on mobile",
+      "heading:Logseq mode",
+      "setting:Folder for Logseq mode",
       "heading:Advanced",
       "setting:Debug mode",
     ]);
@@ -327,33 +386,44 @@ describe("SettingsTab", () => {
     );
     const cursorSetting = settingRecords[1];
     const hoverSetting = settingRecords[8];
-    const outerSetting = settingRecords[9];
-    const actionSetting = settingRecords[10];
-    const mobileSetting = settingRecords[11];
+    const threadingSetting = settingRecords[9];
+    const outerSetting = settingRecords[10];
+    const actionSetting = settingRecords[11];
+    const mobileSetting = settingRecords[12];
+    const logseqFolderSetting = settingRecords[13];
 
     expect(cursorSetting?.dropdown?.value).toBe("bullet-and-checkbox");
     expect(hoverSetting?.toggle?.value).toBe(true);
+    expect(threadingSetting?.toggle?.value).toBe(false);
     expect(outerSetting?.toggle?.value).toBe(true);
     expect(actionSetting?.toggle?.value).toBe(true);
     expect(mobileSetting?.toggle?.value).toBe(true);
+    expect(logseqFolderSetting?.text?.value).toBe("Bulletlist");
+    expect(logseqFolderSetting?.text?.placeholder).toBe("Bulletlist");
 
     if (
       !hoverSetting.toggle ||
       !outerSetting.toggle ||
+      !threadingSetting.toggle ||
       !actionSetting.toggle ||
-      !mobileSetting.toggle
+      !mobileSetting.toggle ||
+      !logseqFolderSetting.text
     ) {
       throw new Error("Expected legacy toggle controls");
     }
     await hoverSetting.toggle.callbacks[0](false);
+    await threadingSetting.toggle.callbacks[0](true);
     await outerSetting.toggle.callbacks[0](false);
     await actionSetting.toggle.callbacks[0](false);
     await mobileSetting.toggle.callbacks[0](false);
+    await logseqFolderSetting.text.callbacks[0]("Outlines");
 
     expect(settings.enhancedVerticalLineHover).toBe(false);
+    expect(settings.bulletThreading).toBe(true);
     expect(settings.outerVerticalLines).toBe(false);
     expect(settings.verticalLinesAction).toBe("none");
     expect(settings.mobileRightFoldControls).toBe(false);
-    expect(settings.save).toHaveBeenCalledTimes(4);
+    expect(settings.logseqFolder).toBe("Outlines");
+    expect(settings.save).toHaveBeenCalledTimes(6);
   });
 });

@@ -101,6 +101,10 @@ const settingCommandDecoders = {
     k: "enhanceVerticalLineHover",
     v: decodeBooleanSetting("enhanceVerticalLineHover", value),
   }),
+  bulletThreading: (value) => ({
+    k: "bulletThreading",
+    v: decodeBooleanSetting("bulletThreading", value),
+  }),
   debug: (value) => ({
     k: "debug",
     v: decodeBooleanSetting("debug", value),
@@ -140,6 +144,10 @@ const settingCommandDecoders = {
   mobileRightFoldControls: (value) => ({
     k: "mobileRightFoldControls",
     v: decodeBooleanSetting("mobileRightFoldControls", value),
+  }),
+  logseqFolder: (value) => ({
+    k: "logseqFolder",
+    v: decodeString("setSetting", value),
   }),
   dnd: (value) => ({
     k: "dnd",

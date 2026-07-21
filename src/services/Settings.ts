@@ -7,6 +7,7 @@ export type KeepCursorWithinContent =
 export interface SettingsObject {
   styleLists: boolean;
   enhanceVerticalLineHover: boolean;
+  bulletThreading: boolean;
   debug: boolean;
   stickCursor: KeepCursorWithinContent | boolean;
   keepBodyTextInBullets: boolean;
@@ -17,6 +18,7 @@ export interface SettingsObject {
   outerListLines: boolean;
   listLineAction: VerticalLinesAction;
   mobileRightFoldControls: boolean;
+  logseqFolder: string;
   dnd: boolean;
 }
 
@@ -29,6 +31,7 @@ export interface SettingsChange {
 const DEFAULT_SETTINGS: SettingsObject = {
   styleLists: true,
   enhanceVerticalLineHover: true,
+  bulletThreading: false,
   debug: false,
   stickCursor: "bullet-and-checkbox",
   keepBodyTextInBullets: true,
@@ -39,6 +42,7 @@ const DEFAULT_SETTINGS: SettingsObject = {
   outerListLines: true,
   listLineAction: "toggle-folding",
   mobileRightFoldControls: true,
+  logseqFolder: "",
   dnd: true,
 };
 
@@ -139,6 +143,14 @@ export class Settings {
     this.update({ enhanceVerticalLineHover: value });
   }
 
+  get bulletThreading() {
+    return this.values.bulletThreading;
+  }
+
+  set bulletThreading(value: boolean) {
+    this.update({ bulletThreading: value });
+  }
+
   get outerVerticalLines() {
     return this.values.outerListLines;
   }
@@ -161,6 +173,14 @@ export class Settings {
 
   set mobileRightFoldControls(value: boolean) {
     this.update({ mobileRightFoldControls: value });
+  }
+
+  get logseqFolder() {
+    return this.values.logseqFolder;
+  }
+
+  set logseqFolder(value: string) {
+    this.update({ logseqFolder: value });
   }
 
   get dragAndDrop() {

@@ -1,4 +1,4 @@
-import { Editor, editorInfoField } from "obsidian";
+import { Editor, TFile, editorInfoField } from "obsidian";
 
 import {
   foldEffect,
@@ -37,6 +37,10 @@ export function getEditorFromState(state: EditorState) {
   }
 
   return new MyEditor(editor);
+}
+
+export function getFileFromState(state: EditorState): TFile | null {
+  return state.field(editorInfoField)?.file ?? null;
 }
 
 export function getFoldedLinesFromState(state: EditorState): number[] {
