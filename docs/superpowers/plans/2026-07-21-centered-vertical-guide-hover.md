@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Render every actionable hovered vertical guide as a three-pixel line whose center remains identical to the normal one-pixel guide.
+**Goal:** Render every actionable hovered vertical guide as a rounded three-pixel line whose center remains identical to the normal one-pixel guide.
 
-**Architecture:** Keep Obsidian's native pseudo-elements and the existing semantic hover markers. Increase only the marked border to three pixels, then shift the pseudo-element one pixel toward its positioning edge so the added width expands equally on both sides of the original center.
+**Architecture:** Keep Obsidian's native pseudo-elements and the existing semantic hover markers. Increase only the marked border to three pixels and apply Logseq's two-pixel corner radius. Shift native guides one pixel with a logical negative margin so their static position remains intact; shift explicitly anchored outer guides one pixel with their logical inset.
 
 **Tech Stack:** CSS logical properties, Jest stylesheet contract tests, Node.js 22.23.1, GitButler CLI
 
@@ -12,6 +12,7 @@
 
 - Keep `.cm-indent::before` and `.bullet-plugin-outer-list-guide::before` as the only paint sources.
 - Use `border-inline-end: 3px solid var(--indentation-guide-color-active)` for every actionable hovered guide.
+- Use `border-radius: 2px` for every actionable hovered guide and leave normal guide corners unchanged.
 - Keep the normal one-pixel guide width and color unchanged.
 - Add no transition, fixed color, opacity override, overlay, shadow, gradient, or coordinate cache.
 - Preserve semantic whole-guide marker grouping, folding, selection, scrolling, and hit targets.
@@ -35,7 +36,7 @@
 Change the native hover assertion to require the following normalized declarations:
 
 ```text
-inset-inline-end: -1px; border-inline-end: 3px solid var(--indentation-guide-color-active);
+margin-inline-start: -1px; border-inline-end: 3px solid var(--indentation-guide-color-active); border-radius: 2px;
 ```
 
 Change the general outer hover assertion to require both declarations:
@@ -45,6 +46,7 @@ expect(hovered).toContain("inset-inline-end: -1px;");
 expect(hovered).toContain(
   "border-inline-end: 3px solid var(--indentation-guide-color-active);",
 );
+expect(hovered).toContain("border-radius: 2px;");
 ```
 
 Add a desktop outer hover assertion for the existing actionable marker selector scoped by `body:not(.is-mobile)`:
@@ -55,7 +57,7 @@ expect(desktopHovered?.replace(/\s+/g, " ").trim()).toBe(
 );
 ```
 
-Assert that the hovered guide rules contain no `left`, `right`, `transition`, `box-shadow`, `background`, or `opacity` declaration.
+Assert that the native hover rule contains no logical inset and that all hovered guide rules contain no physical `left`, physical `right`, `transition`, `box-shadow`, `background`, or `opacity` declaration.
 
 - [ ] **Step 2: Run the focused test and verify RED**
 
@@ -65,15 +67,24 @@ Run:
 SKIP_OBSIDIAN=1 n exec 22.23.1 npx jest src/features/__tests__/GuideFolding.test.ts --runInBand
 ```
 
-Expected: the native and outer hover style assertions fail because the current rules still use `--indentation-guide-width-active` and provide no centering inset.
+Expected: the native and outer hover style assertions fail because the current rules still use `--indentation-guide-width-active` and provide no centering offset.
 
 - [ ] **Step 3: Implement the centered hover geometry**
 
-Update the native hover rule and general outer hover rule:
+Update the native hover rule:
+
+```css
+margin-inline-start: -1px;
+border-inline-end: 3px solid var(--indentation-guide-color-active);
+border-radius: 2px;
+```
+
+Update the general outer hover rule:
 
 ```css
 inset-inline-end: -1px;
 border-inline-end: 3px solid var(--indentation-guide-color-active);
+border-radius: 2px;
 ```
 
 After the general outer hover rule, add the desktop override:
@@ -129,7 +140,9 @@ obsidian-cli vault=vault dev:cdp method=Runtime.evaluate params='{"expression":"
 ```
 
 Before each Computer Use action, focus the test-vault renderer and confirm the window title contains `vault` and does not contain `base`.
-For one native inner guide and one outer guide, compare the normal and hovered painted bounds and confirm the center X difference is `0px`, while the widths are `1px` and `3px`.
+For one native inner guide, confirm the normal geometry computes to `static inline start + 0px margin + 1px content width + 0.5px border = center`, while hover computes to `the same static inline start - 1px margin + 1px content width + 1.5px border = the same center`.
+For one outer guide, compare the normal and hovered painted bounds and confirm the center X difference is `0px`, while the widths are `1px` and `3px`.
+Confirm the hovered pseudo-elements compute to `border-radius: 2px`, the normal pseudo-elements retain their native radius, and the rendered three-pixel endpoints appear rounded.
 Confirm the whole represented logical guide becomes three pixels wide and a separate list at the same X coordinate remains unchanged.
 
 - [ ] **Step 7: Commit the implementation with GitButler**
