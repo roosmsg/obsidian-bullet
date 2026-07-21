@@ -397,6 +397,15 @@ body:not(.bullet-plugin-dragging)
   transform: scale(1.35);
 }
 
+/* Sync identities are concealed on inactive lines by the editor extension.
+   The identity revealed on the line being edited stays small and faint, so
+   typing at the end of a line remains predictable while the marker fades
+   out of attention. */
+.cm-editor.bullet-plugin-logseq-mode .cm-blockid {
+  opacity: 0.35;
+  font-size: 0.8em;
+}
+
 body:not(.bullet-plugin-dragging)
   .markdown-rendered
   li.bullet-plugin-logseq-reading-navigable
@@ -469,47 +478,43 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     --list-threading-tail-down-reach: 0.2em;
   }
 
+  /* Per-ancestor-level colour and column offset. "Deeper than N" is
+     expressed as a hovered list line that is none of levels 1..N, so any
+     depth Obsidian emits keeps threading; levels beyond the palette reuse
+     the last colour, matching Reading mode. Generated - keep the three
+     selector shapes (tail ::after, in-between ::before, elbow ::before) in
+     sync with the geometry blocks below. */
+
+  /* Per-ancestor-level colour and column offset. "Deeper than N" is
+     expressed as a hovered list line that is none of levels 1..N, so any
+     depth Obsidian emits keeps threading; levels beyond the palette reuse
+     the last colour, matching Reading mode. Generated - keep the three
+     selector shapes (tail ::after, in-between ::before, elbow ::before) in
+     sync with the geometry blocks below. */
+
   .HyperMD-list-line-1:not(
       :has(~ .HyperMD-list-line-1 ~ .HyperMD-list-line:hover)
-    ):has(
-      ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-5,
-          .HyperMD-list-line-4,
-          .HyperMD-list-line-3,
-          .HyperMD-list-line-2
-        ):hover
-    )::after,
+    ):has(~ .HyperMD-list-line:hover:not(.HyperMD-list-line-1))::after,
   .HyperMD-list-line-1:not(
       :has(~ .HyperMD-list-line-1 ~ .HyperMD-list-line:hover)
     )
     ~ .HyperMD-list-line:has(
       ~ .HyperMD-list-line-2:hover,
       ~ .HyperMD-list-line-2
-        ~ :is(
-          .HyperMD-list-line-3,
-          .HyperMD-list-line-4,
-          .HyperMD-list-line-5,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-8
-        ):hover
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2
+        )
     )::before,
   .HyperMD-list-line-2:not(
       :has(~ .HyperMD-list-line-2 ~ .HyperMD-list-line:hover)
     ):is(
       :hover,
       :has(
-        ~ :is(
-            .HyperMD-list-line-3,
-            .HyperMD-list-line-4,
-            .HyperMD-list-line-5,
-            .HyperMD-list-line-6,
-            .HyperMD-list-line-7,
-            .HyperMD-list-line-8
-          ):hover
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2
+          )
       )
     )::before {
     --list-threading-color: hsl(23, 100%, 45%, 1);
@@ -519,14 +524,7 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
   .HyperMD-list-line-2:not(
       :has(~ .HyperMD-list-line-2 ~ .HyperMD-list-line:hover)
     ):has(
-      ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-5,
-          .HyperMD-list-line-4,
-          .HyperMD-list-line-3
-        ):hover
+      ~ .HyperMD-list-line:hover:not(.HyperMD-list-line-1, .HyperMD-list-line-2)
     )::after,
   .HyperMD-list-line-2:not(
       :has(~ .HyperMD-list-line-2 ~ .HyperMD-list-line:hover)
@@ -534,26 +532,22 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     ~ .HyperMD-list-line:has(
       ~ .HyperMD-list-line-3:hover,
       ~ .HyperMD-list-line-3
-        ~ :is(
-          .HyperMD-list-line-4,
-          .HyperMD-list-line-5,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-8
-        ):hover
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3
+        )
     )::before,
   .HyperMD-list-line-3:not(
       :has(~ .HyperMD-list-line-3 ~ .HyperMD-list-line:hover)
     ):is(
       :hover,
       :has(
-        ~ :is(
-            .HyperMD-list-line-4,
-            .HyperMD-list-line-5,
-            .HyperMD-list-line-6,
-            .HyperMD-list-line-7,
-            .HyperMD-list-line-8
-          ):hover
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3
+          )
       )
     )::before {
     --list-threading-color: hsl(46, 100%, 45%, 1);
@@ -563,13 +557,11 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
   .HyperMD-list-line-3:not(
       :has(~ .HyperMD-list-line-3 ~ .HyperMD-list-line:hover)
     ):has(
-      ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-5,
-          .HyperMD-list-line-4
-        ):hover
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3
+        )
     )::after,
   .HyperMD-list-line-3:not(
       :has(~ .HyperMD-list-line-3 ~ .HyperMD-list-line:hover)
@@ -577,24 +569,24 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     ~ .HyperMD-list-line:has(
       ~ .HyperMD-list-line-4:hover,
       ~ .HyperMD-list-line-4
-        ~ :is(
-          .HyperMD-list-line-5,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-8
-        ):hover
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4
+        )
     )::before,
   .HyperMD-list-line-4:not(
       :has(~ .HyperMD-list-line-4 ~ .HyperMD-list-line:hover)
     ):is(
       :hover,
       :has(
-        ~ :is(
-            .HyperMD-list-line-5,
-            .HyperMD-list-line-6,
-            .HyperMD-list-line-7,
-            .HyperMD-list-line-8
-          ):hover
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4
+          )
       )
     )::before {
     --list-threading-color: hsl(70, 100%, 45%, 1);
@@ -606,12 +598,12 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
   .HyperMD-list-line-4:not(
       :has(~ .HyperMD-list-line-4 ~ .HyperMD-list-line:hover)
     ):has(
-      ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-5
-        ):hover
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4
+        )
     )::after,
   .HyperMD-list-line-4:not(
       :has(~ .HyperMD-list-line-4 ~ .HyperMD-list-line:hover)
@@ -619,22 +611,26 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     ~ .HyperMD-list-line:has(
       ~ .HyperMD-list-line-5:hover,
       ~ .HyperMD-list-line-5
-        ~ :is(
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-8
-        ):hover
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5
+        )
     )::before,
   .HyperMD-list-line-5:not(
       :has(~ .HyperMD-list-line-5 ~ .HyperMD-list-line:hover)
     ):is(
       :hover,
       :has(
-        ~ :is(
-            .HyperMD-list-line-6,
-            .HyperMD-list-line-7,
-            .HyperMD-list-line-8
-          ):hover
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5
+          )
       )
     )::before {
     --list-threading-color: hsl(105, 100%, 45%, 1);
@@ -646,11 +642,13 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
   .HyperMD-list-line-5:not(
       :has(~ .HyperMD-list-line-5 ~ .HyperMD-list-line:hover)
     ):has(
-      ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6
-        ):hover
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5
+        )
     )::after,
   .HyperMD-list-line-5:not(
       :has(~ .HyperMD-list-line-5 ~ .HyperMD-list-line:hover)
@@ -658,13 +656,29 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     ~ .HyperMD-list-line:has(
       ~ .HyperMD-list-line-6:hover,
       ~ .HyperMD-list-line-6
-        ~ :is(.HyperMD-list-line-7, .HyperMD-list-line-8):hover
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6
+        )
     )::before,
   .HyperMD-list-line-6:not(
       :has(~ .HyperMD-list-line-6 ~ .HyperMD-list-line:hover)
     ):is(
       :hover,
-      :has(~ :is(.HyperMD-list-line-7, .HyperMD-list-line-8):hover)
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6
+          )
+      )
     )::before {
     --list-threading-color: hsl(187, 100%, 45%, 1);
     --list-threading-offset: calc(
@@ -674,17 +688,48 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
 
   .HyperMD-list-line-6:not(
       :has(~ .HyperMD-list-line-6 ~ .HyperMD-list-line:hover)
-    ):has(~ :is(.HyperMD-list-line-8, .HyperMD-list-line-7):hover)::after,
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6
+        )
+    )::after,
   .HyperMD-list-line-6:not(
       :has(~ .HyperMD-list-line-6 ~ .HyperMD-list-line:hover)
     )
     ~ .HyperMD-list-line:has(
       ~ .HyperMD-list-line-7:hover,
-      ~ .HyperMD-list-line-7 ~ .HyperMD-list-line-8:hover
+      ~ .HyperMD-list-line-7
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7
+        )
     )::before,
   .HyperMD-list-line-7:not(
       :has(~ .HyperMD-list-line-7 ~ .HyperMD-list-line:hover)
-    ):is(:hover, :has(~ .HyperMD-list-line-8:hover))::before {
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7
+          )
+      )
+    )::before {
     --list-threading-color: hsl(280, 100%, 55%, 1);
     --list-threading-offset: calc(
       4px + 0.15em + 5 * var(--list-threading-indent)
@@ -693,82 +738,794 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
 
   .HyperMD-list-line-7:not(
       :has(~ .HyperMD-list-line-7 ~ .HyperMD-list-line:hover)
-    ):has(~ .HyperMD-list-line-8:hover)::after,
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7
+        )
+    )::after,
   .HyperMD-list-line-7:not(
       :has(~ .HyperMD-list-line-7 ~ .HyperMD-list-line:hover)
     )
-    ~ .HyperMD-list-line:has(~ .HyperMD-list-line-8:hover)::before,
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-8:hover,
+      ~ .HyperMD-list-line-8
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8
+        )
+    )::before,
   .HyperMD-list-line-8:not(
       :has(~ .HyperMD-list-line-8 ~ .HyperMD-list-line:hover)
-    ):is(:hover)::before {
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8
+          )
+      )
+    )::before {
     --list-threading-color: hsl(325, 100%, 55%, 1);
     --list-threading-offset: calc(
       4px + 0.15em + 6 * var(--list-threading-indent)
     );
   }
 
+  .HyperMD-list-line-8:not(
+      :has(~ .HyperMD-list-line-8 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8
+        )
+    )::after,
+  .HyperMD-list-line-8:not(
+      :has(~ .HyperMD-list-line-8 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-9:hover,
+      ~ .HyperMD-list-line-9
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9
+        )
+    )::before,
+  .HyperMD-list-line-9:not(
+      :has(~ .HyperMD-list-line-9 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9
+          )
+      )
+    )::before {
+    --list-threading-color: hsl(325, 100%, 55%, 1);
+    --list-threading-offset: calc(
+      4px + 0.15em + 7 * var(--list-threading-indent)
+    );
+  }
+
+  .HyperMD-list-line-9:not(
+      :has(~ .HyperMD-list-line-9 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9
+        )
+    )::after,
+  .HyperMD-list-line-9:not(
+      :has(~ .HyperMD-list-line-9 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-10:hover,
+      ~ .HyperMD-list-line-10
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10
+        )
+    )::before,
+  .HyperMD-list-line-10:not(
+      :has(~ .HyperMD-list-line-10 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10
+          )
+      )
+    )::before {
+    --list-threading-color: hsl(325, 100%, 55%, 1);
+    --list-threading-offset: calc(
+      4px + 0.15em + 8 * var(--list-threading-indent)
+    );
+  }
+
+  .HyperMD-list-line-10:not(
+      :has(~ .HyperMD-list-line-10 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10
+        )
+    )::after,
+  .HyperMD-list-line-10:not(
+      :has(~ .HyperMD-list-line-10 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-11:hover,
+      ~ .HyperMD-list-line-11
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11
+        )
+    )::before,
+  .HyperMD-list-line-11:not(
+      :has(~ .HyperMD-list-line-11 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10,
+            .HyperMD-list-line-11
+          )
+      )
+    )::before {
+    --list-threading-color: hsl(325, 100%, 55%, 1);
+    --list-threading-offset: calc(
+      4px + 0.15em + 9 * var(--list-threading-indent)
+    );
+  }
+
+  .HyperMD-list-line-11:not(
+      :has(~ .HyperMD-list-line-11 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11
+        )
+    )::after,
+  .HyperMD-list-line-11:not(
+      :has(~ .HyperMD-list-line-11 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-12:hover,
+      ~ .HyperMD-list-line-12
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12
+        )
+    )::before,
+  .HyperMD-list-line-12:not(
+      :has(~ .HyperMD-list-line-12 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10,
+            .HyperMD-list-line-11,
+            .HyperMD-list-line-12
+          )
+      )
+    )::before {
+    --list-threading-color: hsl(325, 100%, 55%, 1);
+    --list-threading-offset: calc(
+      4px + 0.15em + 10 * var(--list-threading-indent)
+    );
+  }
+
+  .HyperMD-list-line-12:not(
+      :has(~ .HyperMD-list-line-12 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12
+        )
+    )::after,
+  .HyperMD-list-line-12:not(
+      :has(~ .HyperMD-list-line-12 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-13:hover,
+      ~ .HyperMD-list-line-13
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13
+        )
+    )::before,
+  .HyperMD-list-line-13:not(
+      :has(~ .HyperMD-list-line-13 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10,
+            .HyperMD-list-line-11,
+            .HyperMD-list-line-12,
+            .HyperMD-list-line-13
+          )
+      )
+    )::before {
+    --list-threading-color: hsl(325, 100%, 55%, 1);
+    --list-threading-offset: calc(
+      4px + 0.15em + 11 * var(--list-threading-indent)
+    );
+  }
+
+  .HyperMD-list-line-13:not(
+      :has(~ .HyperMD-list-line-13 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13
+        )
+    )::after,
+  .HyperMD-list-line-13:not(
+      :has(~ .HyperMD-list-line-13 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-14:hover,
+      ~ .HyperMD-list-line-14
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13,
+          .HyperMD-list-line-14
+        )
+    )::before,
+  .HyperMD-list-line-14:not(
+      :has(~ .HyperMD-list-line-14 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10,
+            .HyperMD-list-line-11,
+            .HyperMD-list-line-12,
+            .HyperMD-list-line-13,
+            .HyperMD-list-line-14
+          )
+      )
+    )::before {
+    --list-threading-color: hsl(325, 100%, 55%, 1);
+    --list-threading-offset: calc(
+      4px + 0.15em + 12 * var(--list-threading-indent)
+    );
+  }
+
+  .HyperMD-list-line-14:not(
+      :has(~ .HyperMD-list-line-14 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13,
+          .HyperMD-list-line-14
+        )
+    )::after,
+  .HyperMD-list-line-14:not(
+      :has(~ .HyperMD-list-line-14 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-15:hover,
+      ~ .HyperMD-list-line-15
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13,
+          .HyperMD-list-line-14,
+          .HyperMD-list-line-15
+        )
+    )::before,
+  .HyperMD-list-line-15:not(
+      :has(~ .HyperMD-list-line-15 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10,
+            .HyperMD-list-line-11,
+            .HyperMD-list-line-12,
+            .HyperMD-list-line-13,
+            .HyperMD-list-line-14,
+            .HyperMD-list-line-15
+          )
+      )
+    )::before {
+    --list-threading-color: hsl(325, 100%, 55%, 1);
+    --list-threading-offset: calc(
+      4px + 0.15em + 13 * var(--list-threading-indent)
+    );
+  }
+
+  .HyperMD-list-line-15:not(
+      :has(~ .HyperMD-list-line-15 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13,
+          .HyperMD-list-line-14,
+          .HyperMD-list-line-15
+        )
+    )::after,
+  .HyperMD-list-line-15:not(
+      :has(~ .HyperMD-list-line-15 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-16:hover,
+      ~ .HyperMD-list-line-16
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13,
+          .HyperMD-list-line-14,
+          .HyperMD-list-line-15,
+          .HyperMD-list-line-16
+        )
+    )::before,
+  .HyperMD-list-line-16:not(
+      :has(~ .HyperMD-list-line-16 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10,
+            .HyperMD-list-line-11,
+            .HyperMD-list-line-12,
+            .HyperMD-list-line-13,
+            .HyperMD-list-line-14,
+            .HyperMD-list-line-15,
+            .HyperMD-list-line-16
+          )
+      )
+    )::before {
+    --list-threading-color: hsl(325, 100%, 55%, 1);
+    --list-threading-offset: calc(
+      4px + 0.15em + 14 * var(--list-threading-indent)
+    );
+  }
+
   /* tails */
+
   .HyperMD-list-line-1:not(
       :has(~ .HyperMD-list-line-1 ~ .HyperMD-list-line:hover)
-    ):has(
-      ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-5,
-          .HyperMD-list-line-4,
-          .HyperMD-list-line-3,
-          .HyperMD-list-line-2
-        ):hover
-    )::after,
+    ):has(~ .HyperMD-list-line:hover:not(.HyperMD-list-line-1))::after,
   .HyperMD-list-line-2:not(
       :has(~ .HyperMD-list-line-2 ~ .HyperMD-list-line:hover)
     ):has(
-      ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-5,
-          .HyperMD-list-line-4,
-          .HyperMD-list-line-3
-        ):hover
+      ~ .HyperMD-list-line:hover:not(.HyperMD-list-line-1, .HyperMD-list-line-2)
     )::after,
   .HyperMD-list-line-3:not(
       :has(~ .HyperMD-list-line-3 ~ .HyperMD-list-line:hover)
     ):has(
-      ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-5,
-          .HyperMD-list-line-4
-        ):hover
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3
+        )
     )::after,
   .HyperMD-list-line-4:not(
       :has(~ .HyperMD-list-line-4 ~ .HyperMD-list-line:hover)
     ):has(
-      ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-5
-        ):hover
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4
+        )
     )::after,
   .HyperMD-list-line-5:not(
       :has(~ .HyperMD-list-line-5 ~ .HyperMD-list-line:hover)
     ):has(
-      ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6
-        ):hover
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5
+        )
     )::after,
   .HyperMD-list-line-6:not(
       :has(~ .HyperMD-list-line-6 ~ .HyperMD-list-line:hover)
-    ):has(~ :is(.HyperMD-list-line-8, .HyperMD-list-line-7):hover)::after,
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6
+        )
+    )::after,
   .HyperMD-list-line-7:not(
       :has(~ .HyperMD-list-line-7 ~ .HyperMD-list-line:hover)
-    ):has(~ .HyperMD-list-line-8:hover)::after {
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7
+        )
+    )::after,
+  .HyperMD-list-line-8:not(
+      :has(~ .HyperMD-list-line-8 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8
+        )
+    )::after,
+  .HyperMD-list-line-9:not(
+      :has(~ .HyperMD-list-line-9 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9
+        )
+    )::after,
+  .HyperMD-list-line-10:not(
+      :has(~ .HyperMD-list-line-10 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10
+        )
+    )::after,
+  .HyperMD-list-line-11:not(
+      :has(~ .HyperMD-list-line-11 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11
+        )
+    )::after,
+  .HyperMD-list-line-12:not(
+      :has(~ .HyperMD-list-line-12 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12
+        )
+    )::after,
+  .HyperMD-list-line-13:not(
+      :has(~ .HyperMD-list-line-13 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13
+        )
+    )::after,
+  .HyperMD-list-line-14:not(
+      :has(~ .HyperMD-list-line-14 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13,
+          .HyperMD-list-line-14
+        )
+    )::after,
+  .HyperMD-list-line-15:not(
+      :has(~ .HyperMD-list-line-15 ~ .HyperMD-list-line:hover)
+    ):has(
+      ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13,
+          .HyperMD-list-line-14,
+          .HyperMD-list-line-15
+        )
+    )::after {
     content: "";
     position: absolute;
     left: calc(
@@ -787,25 +1544,23 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     border-left: var(--outline-guideline-width) solid
       var(--list-threading-color);
   }
+
   .HyperMD-list-line.HyperMD-task-line::after {
     max-height: 0.275em;
   }
 
   /* in-between lines */
+
   .HyperMD-list-line-1:not(
       :has(~ .HyperMD-list-line-1 ~ .HyperMD-list-line:hover)
     )
     ~ .HyperMD-list-line:has(
       ~ .HyperMD-list-line-2:hover,
       ~ .HyperMD-list-line-2
-        ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-5,
-          .HyperMD-list-line-4,
-          .HyperMD-list-line-3
-        ):hover
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2
+        )
     )::before,
   .HyperMD-list-line-2:not(
       :has(~ .HyperMD-list-line-2 ~ .HyperMD-list-line:hover)
@@ -813,13 +1568,11 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     ~ .HyperMD-list-line:has(
       ~ .HyperMD-list-line-3:hover,
       ~ .HyperMD-list-line-3
-        ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-5,
-          .HyperMD-list-line-4
-        ):hover
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3
+        )
     )::before,
   .HyperMD-list-line-3:not(
       :has(~ .HyperMD-list-line-3 ~ .HyperMD-list-line:hover)
@@ -827,12 +1580,12 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     ~ .HyperMD-list-line:has(
       ~ .HyperMD-list-line-4:hover,
       ~ .HyperMD-list-line-4
-        ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6,
-          .HyperMD-list-line-5
-        ):hover
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4
+        )
     )::before,
   .HyperMD-list-line-4:not(
       :has(~ .HyperMD-list-line-4 ~ .HyperMD-list-line:hover)
@@ -840,11 +1593,13 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     ~ .HyperMD-list-line:has(
       ~ .HyperMD-list-line-5:hover,
       ~ .HyperMD-list-line-5
-        ~ :is(
-          .HyperMD-list-line-8,
-          .HyperMD-list-line-7,
-          .HyperMD-list-line-6
-        ):hover
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5
+        )
     )::before,
   .HyperMD-list-line-5:not(
       :has(~ .HyperMD-list-line-5 ~ .HyperMD-list-line:hover)
@@ -852,19 +1607,220 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     ~ .HyperMD-list-line:has(
       ~ .HyperMD-list-line-6:hover,
       ~ .HyperMD-list-line-6
-        ~ :is(.HyperMD-list-line-8, .HyperMD-list-line-7):hover
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6
+        )
     )::before,
   .HyperMD-list-line-6:not(
       :has(~ .HyperMD-list-line-6 ~ .HyperMD-list-line:hover)
     )
     ~ .HyperMD-list-line:has(
       ~ .HyperMD-list-line-7:hover,
-      ~ .HyperMD-list-line-7 ~ .HyperMD-list-line-8:hover
+      ~ .HyperMD-list-line-7
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7
+        )
     )::before,
   .HyperMD-list-line-7:not(
       :has(~ .HyperMD-list-line-7 ~ .HyperMD-list-line:hover)
     )
-    ~ .HyperMD-list-line:has(~ .HyperMD-list-line-8:hover)::before {
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-8:hover,
+      ~ .HyperMD-list-line-8
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8
+        )
+    )::before,
+  .HyperMD-list-line-8:not(
+      :has(~ .HyperMD-list-line-8 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-9:hover,
+      ~ .HyperMD-list-line-9
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9
+        )
+    )::before,
+  .HyperMD-list-line-9:not(
+      :has(~ .HyperMD-list-line-9 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-10:hover,
+      ~ .HyperMD-list-line-10
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10
+        )
+    )::before,
+  .HyperMD-list-line-10:not(
+      :has(~ .HyperMD-list-line-10 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-11:hover,
+      ~ .HyperMD-list-line-11
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11
+        )
+    )::before,
+  .HyperMD-list-line-11:not(
+      :has(~ .HyperMD-list-line-11 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-12:hover,
+      ~ .HyperMD-list-line-12
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12
+        )
+    )::before,
+  .HyperMD-list-line-12:not(
+      :has(~ .HyperMD-list-line-12 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-13:hover,
+      ~ .HyperMD-list-line-13
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13
+        )
+    )::before,
+  .HyperMD-list-line-13:not(
+      :has(~ .HyperMD-list-line-13 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-14:hover,
+      ~ .HyperMD-list-line-14
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13,
+          .HyperMD-list-line-14
+        )
+    )::before,
+  .HyperMD-list-line-14:not(
+      :has(~ .HyperMD-list-line-14 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-15:hover,
+      ~ .HyperMD-list-line-15
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13,
+          .HyperMD-list-line-14,
+          .HyperMD-list-line-15
+        )
+    )::before,
+  .HyperMD-list-line-15:not(
+      :has(~ .HyperMD-list-line-15 ~ .HyperMD-list-line:hover)
+    )
+    ~ .HyperMD-list-line:has(
+      ~ .HyperMD-list-line-16:hover,
+      ~ .HyperMD-list-line-16
+        ~ .HyperMD-list-line:hover:not(
+          .HyperMD-list-line-1,
+          .HyperMD-list-line-2,
+          .HyperMD-list-line-3,
+          .HyperMD-list-line-4,
+          .HyperMD-list-line-5,
+          .HyperMD-list-line-6,
+          .HyperMD-list-line-7,
+          .HyperMD-list-line-8,
+          .HyperMD-list-line-9,
+          .HyperMD-list-line-10,
+          .HyperMD-list-line-11,
+          .HyperMD-list-line-12,
+          .HyperMD-list-line-13,
+          .HyperMD-list-line-14,
+          .HyperMD-list-line-15,
+          .HyperMD-list-line-16
+        )
+    )::before {
     content: "";
     position: absolute;
     left: calc(
@@ -878,19 +1834,16 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
   }
 
   /* elbows */
+
   .HyperMD-list-line-2:not(
       :has(~ .HyperMD-list-line-2 ~ .HyperMD-list-line:hover)
     ):is(
       :hover,
       :has(
-        ~ :is(
-            .HyperMD-list-line-8,
-            .HyperMD-list-line-7,
-            .HyperMD-list-line-6,
-            .HyperMD-list-line-5,
-            .HyperMD-list-line-4,
-            .HyperMD-list-line-3
-          ):hover
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2
+          )
       )
     )::before,
   .HyperMD-list-line-3:not(
@@ -898,13 +1851,11 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     ):is(
       :hover,
       :has(
-        ~ :is(
-            .HyperMD-list-line-8,
-            .HyperMD-list-line-7,
-            .HyperMD-list-line-6,
-            .HyperMD-list-line-5,
-            .HyperMD-list-line-4
-          ):hover
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3
+          )
       )
     )::before,
   .HyperMD-list-line-4:not(
@@ -912,12 +1863,12 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     ):is(
       :hover,
       :has(
-        ~ :is(
-            .HyperMD-list-line-8,
-            .HyperMD-list-line-7,
-            .HyperMD-list-line-6,
-            .HyperMD-list-line-5
-          ):hover
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4
+          )
       )
     )::before,
   .HyperMD-list-line-5:not(
@@ -925,25 +1876,235 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     ):is(
       :hover,
       :has(
-        ~ :is(
-            .HyperMD-list-line-8,
-            .HyperMD-list-line-7,
-            .HyperMD-list-line-6
-          ):hover
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5
+          )
       )
     )::before,
   .HyperMD-list-line-6:not(
       :has(~ .HyperMD-list-line-6 ~ .HyperMD-list-line:hover)
     ):is(
       :hover,
-      :has(~ :is(.HyperMD-list-line-8, .HyperMD-list-line-7):hover)
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6
+          )
+      )
     )::before,
   .HyperMD-list-line-7:not(
       :has(~ .HyperMD-list-line-7 ~ .HyperMD-list-line:hover)
-    ):is(:hover, :has(~ .HyperMD-list-line-8:hover))::before,
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7
+          )
+      )
+    )::before,
   .HyperMD-list-line-8:not(
       :has(~ .HyperMD-list-line-8 ~ .HyperMD-list-line:hover)
-    ):is(:hover)::before {
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8
+          )
+      )
+    )::before,
+  .HyperMD-list-line-9:not(
+      :has(~ .HyperMD-list-line-9 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9
+          )
+      )
+    )::before,
+  .HyperMD-list-line-10:not(
+      :has(~ .HyperMD-list-line-10 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10
+          )
+      )
+    )::before,
+  .HyperMD-list-line-11:not(
+      :has(~ .HyperMD-list-line-11 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10,
+            .HyperMD-list-line-11
+          )
+      )
+    )::before,
+  .HyperMD-list-line-12:not(
+      :has(~ .HyperMD-list-line-12 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10,
+            .HyperMD-list-line-11,
+            .HyperMD-list-line-12
+          )
+      )
+    )::before,
+  .HyperMD-list-line-13:not(
+      :has(~ .HyperMD-list-line-13 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10,
+            .HyperMD-list-line-11,
+            .HyperMD-list-line-12,
+            .HyperMD-list-line-13
+          )
+      )
+    )::before,
+  .HyperMD-list-line-14:not(
+      :has(~ .HyperMD-list-line-14 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10,
+            .HyperMD-list-line-11,
+            .HyperMD-list-line-12,
+            .HyperMD-list-line-13,
+            .HyperMD-list-line-14
+          )
+      )
+    )::before,
+  .HyperMD-list-line-15:not(
+      :has(~ .HyperMD-list-line-15 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10,
+            .HyperMD-list-line-11,
+            .HyperMD-list-line-12,
+            .HyperMD-list-line-13,
+            .HyperMD-list-line-14,
+            .HyperMD-list-line-15
+          )
+      )
+    )::before,
+  .HyperMD-list-line-16:not(
+      :has(~ .HyperMD-list-line-16 ~ .HyperMD-list-line:hover)
+    ):is(
+      :hover,
+      :has(
+        ~ .HyperMD-list-line:hover:not(
+            .HyperMD-list-line-1,
+            .HyperMD-list-line-2,
+            .HyperMD-list-line-3,
+            .HyperMD-list-line-4,
+            .HyperMD-list-line-5,
+            .HyperMD-list-line-6,
+            .HyperMD-list-line-7,
+            .HyperMD-list-line-8,
+            .HyperMD-list-line-9,
+            .HyperMD-list-line-10,
+            .HyperMD-list-line-11,
+            .HyperMD-list-line-12,
+            .HyperMD-list-line-13,
+            .HyperMD-list-line-14,
+            .HyperMD-list-line-15,
+            .HyperMD-list-line-16
+          )
+      )
+    )::before {
     content: "";
     box-sizing: border-box;
     position: absolute;
@@ -966,6 +2127,7 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     border-left: var(--outline-guideline-width) solid
       var(--list-threading-color);
   }
+
   .HyperMD-list-line.HyperMD-task-line::before {
     max-width: calc(
       var(--list-threading-elbow-length) + var(--list-threading-offset-shift) +
@@ -982,41 +2144,45 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     --reading-threading-marker-y-shift: 0.2em;
     --reading-threading-marker-reach: 0.3em;
     --reading-threading-segment-reach: 2px;
+    --reading-threading-heading-content-offset: 0.3em;
   }
 
   .markdown-rendered li {
     position: relative;
   }
 
-  /* Reading-mode thread colors by child-list depth. */
+  /* Reading-mode thread colors by child-list depth. Each ul also exposes the
+     colour of the thread one level deeper (--reading-threading-child-color)
+     so a heading row can draw the join segment for its own children. */
   .markdown-rendered ul {
-    --reading-threading-first-join-reach: 0em;
+    --reading-threading-child-color: hsl(23, 100%, 45%, 1);
   }
   .markdown-rendered ul ul {
     --reading-threading-color: hsl(23, 100%, 45%, 1);
+    --reading-threading-child-color: hsl(46, 100%, 45%, 1);
   }
   .markdown-rendered ul ul ul {
     --reading-threading-color: hsl(46, 100%, 45%, 1);
+    --reading-threading-child-color: hsl(70, 100%, 45%, 1);
   }
   .markdown-rendered ul ul ul ul {
     --reading-threading-color: hsl(70, 100%, 45%, 1);
+    --reading-threading-child-color: hsl(105, 100%, 45%, 1);
   }
   .markdown-rendered ul ul ul ul ul {
     --reading-threading-color: hsl(105, 100%, 45%, 1);
+    --reading-threading-child-color: hsl(187, 100%, 45%, 1);
   }
   .markdown-rendered ul ul ul ul ul ul {
     --reading-threading-color: hsl(187, 100%, 45%, 1);
+    --reading-threading-child-color: hsl(280, 100%, 55%, 1);
   }
   .markdown-rendered ul ul ul ul ul ul ul {
     --reading-threading-color: hsl(280, 100%, 55%, 1);
+    --reading-threading-child-color: hsl(325, 100%, 55%, 1);
   }
   .markdown-rendered ul ul ul ul ul ul ul ul {
     --reading-threading-color: hsl(325, 100%, 55%, 1);
-  }
-
-  /* Heading list items have a taller first row and need a longer child join. */
-  .markdown-rendered li:has(> :is(h1, h2, h3, h4, h5, h6)) > ul {
-    --reading-threading-first-join-reach: 1em;
   }
 
   /* In-between items. */
@@ -1030,8 +2196,7 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
       var(--reading-threading-color);
     top: calc(
       var(--outline-item-height) / 2 * -1 - var(--outline-guideline-width) / 2 -
-        var(--reading-threading-join-reach) -
-        var(--reading-threading-first-join-reach, 0em) +
+        var(--reading-threading-join-reach) +
         var(--reading-threading-marker-y-shift)
     );
     left: calc(-2px - 2em - var(--size-4-4));
@@ -1039,7 +2204,6 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
       100% - var(--outline-item-height) + var(--size-4-8) + 2px +
         var(--outline-guideline-width) / 2 +
         var(--reading-threading-join-reach) +
-        var(--reading-threading-first-join-reach, 0em) +
         var(--reading-threading-segment-reach)
     );
   }
@@ -1052,8 +2216,7 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
     position: absolute;
     top: calc(
       var(--outline-item-height) / 2 * -1 - var(--outline-guideline-width) / 2 -
-        var(--reading-threading-join-reach) -
-        var(--reading-threading-first-join-reach, 0em) +
+        var(--reading-threading-join-reach) +
         var(--reading-threading-marker-y-shift)
     );
     left: calc(-2px - 2em - var(--size-4-4));
@@ -1069,6 +2232,41 @@ html body.bullet-plugin-dnd.bullet-plugin-dragging {
       var(--reading-threading-color);
     border-left: var(--outline-guideline-width) solid
       var(--reading-threading-color);
+  }
+
+  /* Heading items. Heading rows vary in height per level, so a fixed reach
+     from below cannot hit the marker. Instead the child thread stops at its
+     own top edge and the heading row draws the join segment itself, sized by
+     the heading's own box. */
+
+  .markdown-rendered
+    li:has(> :is(h1, h2, h3, h4, h5, h6)):hover
+    > ul
+    > li:first-child::before {
+    top: 0;
+  }
+
+  .markdown-rendered li:hover > :is(h1, h2, h3, h4, h5, h6):has(~ ul li:hover) {
+    position: relative;
+  }
+
+  .markdown-rendered
+    li:hover
+    > :is(h1, h2, h3, h4, h5, h6):has(~ ul li:hover)::after {
+    content: "";
+    box-sizing: border-box;
+    width: 0;
+    position: absolute;
+    font-size: var(--font-text-size);
+    top: calc(
+      (var(--outline-item-height) + var(--size-4-2)) / 2 - 1px +
+        var(--reading-threading-marker-y-shift) -
+        var(--reading-threading-heading-content-offset)
+    );
+    bottom: calc(0px - var(--size-4-2));
+    left: calc(var(--list-indent, 2em) - 2px - 2em - var(--size-4-4));
+    border-left: var(--outline-guideline-width) solid
+      var(--reading-threading-child-color);
   }
 
   /* Outline Bullet Threading*/

@@ -16,7 +16,13 @@ a bullet creates or opens a nested Markdown note based on that bullet, making
 it possible to navigate an outline as a hierarchy of files.
 
 When a note is created, the selected bullet and its child items are used as its
-initial content. Existing notes are opened without replacing later edits.
+initial content. From then on the note and the root outline stay synchronized
+in both directions: edits made in either file are merged into the other, and
+when both sides touch the same line the most recently saved file wins.
+Connected bullets carry short native block IDs (`^abc123`) as stable
+identities, so renames and moves follow the bullet instead of deleting
+anything. Verified notes whose bullets stay deleted for 30 seconds are sent to
+Obsidian's recoverable local trash; ambiguous files are left alone.
 
 Logseq mode is opt-in. Set **Folder for Logseq mode** under
 **Settings → Bullet** to enable it for that folder and its subfolders.

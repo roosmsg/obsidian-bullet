@@ -11,13 +11,34 @@ import {
   normalizePath,
 } from "obsidian";
 
-import { EditorView, PluginValue, ViewPlugin } from "@codemirror/view";
+import {
+  EditorSelection,
+  EditorState,
+  RangeSetBuilder,
+  Transaction,
+} from "@codemirror/state";
+import type { TransactionSpec } from "@codemirror/state";
+import {
+  Decoration,
+  DecorationSet,
+  EditorView,
+  PluginValue,
+  ViewPlugin,
+  ViewUpdate,
+} from "@codemirror/view";
 
 import { Feature } from "./Feature";
 import { ListMarkerInteractionGuard } from "./ListMarkerInteractionGuard";
+import {
+  LogseqSyncService,
+  getScratchStart,
+  getTrailingBlockIdOffset,
+  stripLogseqSyncId,
+} from "./LogseqSync";
 
 import { MyEditor, getEditorFromState, getFileFromState } from "../editor";
 import type { List } from "../root";
+import { ObsidianSettings } from "../services/ObsidianSettings";
 import { Parser } from "../services/Parser";
 import { Settings } from "../services/Settings";
 
@@ -319,9 +340,11 @@ function extractBulletBranchFromList(
   ) {
     const branchLine = editor.getLine(sourceLineNumber);
     lines.push(
-      branchLine.startsWith(parsedLine.indent)
-        ? branchLine.slice(parsedLine.indent.length)
-        : branchLine,
+      stripLogseqSyncId(
+        branchLine.startsWith(parsedLine.indent)
+          ? branchLine.slice(parsedLine.indent.length)
+          : branchLine,
+      ),
     );
   }
 
@@ -367,11 +390,125 @@ function getReadingLeaf(
   );
 }
 
-async function openLogseqFile(leaf: WorkspaceLeaf, file: TFile): Promise<void> {
+export interface TrailingBulletInsertion {
+  cursor: { ch: number; line: number };
+  insertAt?: { ch: number; line: number };
+  text?: string;
+}
+
+/**
+ * Determines where the cursor should land when a note opens: inside an
+ * empty child bullet below the last non-empty bullet, as if Enter and Tab
+ * were pressed there. Reuses a trailing empty bullet when one already
+ * exists; returns null for documents without bullets.
+ */
+export function getTrailingBulletInsertion(
+  lines: string[],
+  indentUnit: string,
+): TrailingBulletInsertion | null {
+  let anchorBullet = -1;
+  for (let line = lines.length - 1; line >= 0; line--) {
+    const parsed = parseBulletLine(lines[line]);
+    if (!parsed) {
+      continue;
+    }
+    if (parsed.content.trim() === "") {
+      return { cursor: { ch: lines[line].length, line } };
+    }
+    anchorBullet = line;
+    break;
+  }
+  if (anchorBullet < 0) {
+    return null;
+  }
+
+  let insertAfter = anchorBullet;
+  for (let line = lines.length - 1; line > anchorBullet; line--) {
+    if (lines[line].trim() !== "") {
+      insertAfter = line;
+      break;
+    }
+  }
+  const anchorLine = lines[anchorBullet];
+  const indent = anchorLine.match(/^[\t ]*/u)?.[0] ?? "";
+  const marker = anchorLine.match(/^[\t ]*([-+*])/u)?.[1] ?? "-";
+  const bullet = `${indent}${indentUnit}${marker} `;
+  return {
+    cursor: { ch: bullet.length, line: insertAfter + 1 },
+    insertAt: { ch: lines[insertAfter].length, line: insertAfter },
+    text: `\n${bullet}`,
+  };
+}
+
+/**
+ * Undoes the ready-to-type bullet from getTrailingBulletInsertion once a
+ * note is left: trailing bullets that are still empty (and blank lines
+ * around them) are removed. Returns null when there is nothing to remove.
+ * The first line is never removed.
+ */
+export function removeTrailingEmptyBulletLines(content: string): string | null {
+  const eol = content.includes("\r\n") ? "\r\n" : "\n";
+  const finalNewline = /\r?\n$/u.test(content);
+  const lines = content.replace(/\r\n/gu, "\n").split("\n");
+  if (finalNewline) {
+    lines.pop();
+  }
+
+  const keptEnd = getScratchStart(lines);
+  if (keptEnd === lines.length) {
+    return null;
+  }
+  const body = lines.slice(0, keptEnd).join(eol);
+  return finalNewline ? `${body}${eol}` : body;
+}
+
+/**
+ * Steps a cursor sitting at the end of a line's content over the line's
+ * sync identity, so that a following line split leaves the identity welded
+ * to its bullet. Enter handling calls this before computing the split; the
+ * new line then opens below the marker instead of tearing it off.
+ */
+export function stepCursorBehindSyncId(
+  editor: MyEditor,
+  configuredFolder: string,
+): void {
+  if (normalizeLogseqFolder(configuredFolder) === "") {
+    return;
+  }
+  const file = getFileFromState(editor.getCodeMirrorView().state);
+  if (!file || !isPathInLogseqFolder(file.path, configuredFolder)) {
+    return;
+  }
+  const selections = editor.listSelections();
+  if (
+    selections.length !== 1 ||
+    selections[0].anchor.line !== selections[0].head.line ||
+    selections[0].anchor.ch !== selections[0].head.ch
+  ) {
+    return;
+  }
+  const cursor = editor.getCursor();
+  const lineText = editor.getLine(cursor.line);
+  const offset = getTrailingBlockIdOffset(lineText);
+  if (offset === null || cursor.ch !== offset) {
+    return;
+  }
+  const lineEnd = { ch: lineText.length, line: cursor.line };
+  editor.setSelections([{ anchor: lineEnd, head: lineEnd }]);
+}
+
+async function openLogseqFile(
+  leaf: WorkspaceLeaf,
+  file: TFile,
+  getIndentUnit: () => string = () => "\t",
+): Promise<void> {
   await leaf.openFile(file);
 
   const view = leaf.view;
   if (!(view instanceof MarkdownView) || view.file?.path !== file.path) {
+    return;
+  }
+  if (view.getMode() === "preview") {
     return;
   }
 
@@ -380,12 +517,18 @@ async function openLogseqFile(leaf: WorkspaceLeaf, file: TFile): Promise<void> {
     return;
   }
 
-  for (let line = 1; line < editor.lineCount(); line++) {
-    if (editor.getLine(line).trim() === "") {
-      editor.setCursor({ line, ch: 0 });
-      return;
-    }
+  const lines: string[] = [];
+  for (let line = 0; line < editor.lineCount(); line++) {
+    lines.push(editor.getLine(line));
   }
+  const insertion = getTrailingBulletInsertion(lines, getIndentUnit());
+  if (!insertion) {
+    return;
+  }
+  if (insertion.text && insertion.insertAt) {
+    editor.replaceRange(insertion.text, insertion.insertAt);
+  }
+  editor.setCursor(insertion.cursor);
 }
 
 function isNavigationClick(event: MouseEvent): boolean {
@@ -449,6 +592,7 @@ class LogseqReadingNavigation extends MarkdownRenderChild {
     private app: App,
     private settings: Settings,
     private sourcePath: string,
+    private getIndentUnit: () => string = () => "\t",
   ) {
     super(containerEl);
   }
@@ -555,7 +699,7 @@ class LogseqReadingNavigation extends MarkdownRenderChild {
       return;
     }
 
-    await openLogseqFile(leaf, destination);
+    await openLogseqFile(leaf, destination, this.getIndentUnit);
   }
 
   private getExistingDestination(listItem: HTMLElement): TFile | null {
@@ -613,7 +757,10 @@ class LogseqReadingNavigation extends MarkdownRenderChild {
 export class LogseqNoteNavigator {
   private inFlight = new Map<string, Promise<TFile>>();
 
-  constructor(private app: App) {}
+  constructor(
+    private app: App,
+    private getIndentUnit: () => string = () => "\t",
+  ) {}
 
   async open(request: BulletNoteOpenRequest): Promise<void> {
     const folderPath = normalizePath(
@@ -627,7 +774,7 @@ export class LogseqNoteNavigator {
     const pending = this.inFlight.get(filePath);
     if (pending) {
       const file = await pending;
-      await openLogseqFile(request.leaf, file);
+      await openLogseqFile(request.leaf, file, this.getIndentUnit);
       return;
     }
 
@@ -635,7 +782,7 @@ export class LogseqNoteNavigator {
     this.inFlight.set(filePath, operation);
     try {
       const file = await operation;
-      await openLogseqFile(request.leaf, file);
+      await openLogseqFile(request.leaf, file, this.getIndentUnit);
     } finally {
       if (this.inFlight.get(filePath) === operation) {
         this.inFlight.delete(filePath);
@@ -709,6 +856,7 @@ export class LogseqModePluginValue implements PluginValue {
     private navigator: LogseqNoteNavigator,
     private interactionGuard: ListMarkerInteractionGuard,
     private view: EditorView,
+    private getIndentUnit: () => string = () => "\t",
   ) {
     this.view.contentDOM.addEventListener("mousedown", this.onMouseDown, true);
     this.view.contentDOM.addEventListener("click", this.onClick, true);
@@ -835,10 +983,13 @@ export class LogseqModePluginValue implements PluginValue {
           new Notice(`Parent note not found: ${parentNotePath}`, 5000);
           return;
         }
-        void openLogseqFile(leaf, parentFile).catch((error: unknown) => {
-          const detail = error instanceof Error ? error.message : String(error);
-          new Notice(`Unable to open the parent note: ${detail}`, 5000);
-        });
+        void openLogseqFile(leaf, parentFile, this.getIndentUnit).catch(
+          (error: unknown) => {
+            const detail =
+              error instanceof Error ? error.message : String(error);
+            new Notice(`Unable to open the parent note: ${detail}`, 5000);
+          },
+        );
         return;
       }
     }
@@ -874,16 +1025,104 @@ export class LogseqModePluginValue implements PluginValue {
   };
 }
 
+/**
+ * Conceals trailing sync identities (`^abc123`) in Live Preview and Source
+ * mode for files inside the configured Logseq folder. The line under the
+ * cursor stays revealed: hiding it too would let typing at the end of a line
+ * land invisibly inside the identity marker.
+ */
+export class LogseqBlockIdConcealment implements PluginValue {
+  decorations: DecorationSet = Decoration.none;
+  private scopeDirty = false;
+
+  constructor(
+    private settings: Settings,
+    private view: EditorView,
+  ) {
+    this.settings.onChange(["logseqFolder"], this.onScopeChange);
+    this.decorations = this.buildDecorations();
+  }
+
+  update(update: ViewUpdate): void {
+    if (
+      update.docChanged ||
+      update.viewportChanged ||
+      update.selectionSet ||
+      this.scopeDirty
+    ) {
+      this.scopeDirty = false;
+      this.decorations = this.buildDecorations();
+    }
+  }
+
+  destroy(): void {
+    this.settings.removeCallback(this.onScopeChange);
+  }
+
+  private onScopeChange = () => {
+    this.scopeDirty = true;
+    this.view.dispatch({});
+  };
+
+  private buildDecorations(): DecorationSet {
+    const file = getFileFromState(this.view.state);
+    if (!file || !isPathInLogseqFolder(file.path, this.settings.logseqFolder)) {
+      return Decoration.none;
+    }
+
+    const doc = this.view.state.doc;
+    const revealedLines = new Set<number>();
+    for (const range of this.view.state.selection.ranges) {
+      const first = doc.lineAt(range.from).number;
+      const last = doc.lineAt(range.to).number;
+      for (let line = first; line <= last; line++) {
+        revealedLines.add(line);
+      }
+    }
+
+    const builder = new RangeSetBuilder<Decoration>();
+    for (const visible of this.view.visibleRanges) {
+      let position = visible.from;
+      while (position <= visible.to) {
+        const line = doc.lineAt(position);
+        if (!revealedLines.has(line.number)) {
+          const offset = getTrailingBlockIdOffset(line.text);
+          if (offset !== null) {
+            builder.add(line.from + offset, line.to, Decoration.replace({}));
+          }
+        }
+        position = line.to + 1;
+      }
+    }
+    return builder.finish();
+  }
+}
+
 export class LogseqMode implements Feature {
   private navigator: LogseqNoteNavigator;
+  private synchronizer: LogseqSyncService;
+  private getIndentUnit: () => string;
+  private openNotePaths = new Set<string>();
 
   constructor(
     private plugin: Plugin,
     private settings: Settings,
     private parser: Parser,
     private interactionGuard: ListMarkerInteractionGuard,
+    obsidianSettings: ObsidianSettings,
   ) {
-    this.navigator = new LogseqNoteNavigator(this.plugin.app);
+    this.getIndentUnit = () => obsidianSettings.getDefaultIndentChars();
+    this.navigator = new LogseqNoteNavigator(
+      this.plugin.app,
+      this.getIndentUnit,
+    );
+    this.synchronizer = new LogseqSyncService(
+      this.plugin,
+      this.settings,
+      this.parser,
+      normalizeLogseqFolder,
+      getBulletNoteName,
+    );
   }
 
   async load(): Promise<void> {
@@ -897,7 +1136,15 @@ export class LogseqMode implements Feature {
             this.navigator,
             this.interactionGuard,
             view,
+            this.getIndentUnit,
           ),
+      ),
+      ViewPlugin.define(
+        (view) => new LogseqBlockIdConcealment(this.settings, view),
+        { decorations: (value) => value.decorations },
+      ),
+      EditorState.transactionFilter.of((transaction) =>
+        this.keepCursorBeforeSyncId(transaction),
       ),
     ]);
     this.plugin.registerMarkdownPostProcessor((element, context) => {
@@ -907,10 +1154,180 @@ export class LogseqMode implements Feature {
           this.plugin.app,
           this.settings,
           context.sourcePath,
+          this.getIndentUnit,
         ),
       );
     });
+    this.plugin.registerEvent(
+      this.plugin.app.workspace.on("active-leaf-change", this.sweepLeftNotes),
+    );
+    this.plugin.registerEvent(
+      this.plugin.app.workspace.on("layout-change", this.sweepLeftNotes),
+    );
+    await this.synchronizer.load();
+    this.sweepLeftNotes();
   }
 
-  async unload(): Promise<void> {}
+  async unload(): Promise<void> {
+    this.openNotePaths.clear();
+    await this.synchronizer.unload();
+  }
+
+  /**
+   * Keeps the cursor at the end of a line's content, in front of its sync
+   * identity: clicking past the end of a line, pressing End, or arrowing to
+   * the line end stops before the marker, so typing extends the content and
+   * the marker stays trailing. A line break entered at that position is
+   * relocated behind the marker, so Enter opens the next line without
+   * splitting the identity off its bullet. Non-empty selections are left
+   * alone so the marker can still be selected and edited deliberately.
+   */
+  private keepCursorBeforeSyncId(
+    transaction: Transaction,
+  ): TransactionSpec | readonly TransactionSpec[] {
+    const file = getFileFromState(transaction.startState);
+    if (!file || !isPathInLogseqFolder(file.path, this.settings.logseqFolder)) {
+      return transaction;
+    }
+    return (
+      this.moveLineBreakBehindSyncId(transaction) ??
+      this.clampCursorToLineContent(transaction)
+    );
+  }
+
+  private moveLineBreakBehindSyncId(
+    transaction: Transaction,
+  ): TransactionSpec | null {
+    const selection = transaction.selection;
+    if (!selection) {
+      return null;
+    }
+    const changes: Array<{ from: number; text: string; to: number }> = [];
+    transaction.changes.iterChanges((fromA, toA, _fromB, _toB, inserted) => {
+      changes.push({ from: fromA, text: inserted.toString(), to: toA });
+    });
+    if (changes.length !== 1) {
+      return null;
+    }
+    const [change] = changes;
+    if (change.from !== change.to || !change.text.startsWith("\n")) {
+      return null;
+    }
+    const line = transaction.startState.doc.lineAt(change.from);
+    const offset = getTrailingBlockIdOffset(line.text);
+    if (offset === null) {
+      return null;
+    }
+    const contentEnd = line.from + offset;
+    if (change.from !== contentEnd) {
+      return null;
+    }
+    const delta = line.to - contentEnd;
+    const ranges: ReturnType<typeof EditorSelection.cursor>[] = [];
+    for (const range of selection.ranges) {
+      if (!range.empty) {
+        return null;
+      }
+      if (range.head <= contentEnd) {
+        ranges.push(EditorSelection.cursor(range.head));
+        continue;
+      }
+      if (range.head > contentEnd + change.text.length) {
+        return null;
+      }
+      ranges.push(EditorSelection.cursor(range.head + delta));
+    }
+    const userEvent = transaction.annotation(Transaction.userEvent);
+    return {
+      ...(userEvent === undefined
+        ? {}
+        : { annotations: [Transaction.userEvent.of(userEvent)] }),
+      changes: { from: line.to, insert: change.text },
+      scrollIntoView: true,
+      selection: EditorSelection.create(ranges, selection.mainIndex),
+    };
+  }
+
+  private clampCursorToLineContent(
+    transaction: Transaction,
+  ): TransactionSpec | readonly TransactionSpec[] {
+    const selection = transaction.selection;
+    if (!selection) {
+      return transaction;
+    }
+    // Only steer user-driven cursor placement (clicks, End, arrow keys).
+    // Programmatic moves — most importantly the pre-Enter step behind the
+    // marker — pass through untouched.
+    if (!transaction.isUserEvent("select")) {
+      return transaction;
+    }
+    let clamped = false;
+    const ranges = selection.ranges.map((range) => {
+      if (!range.empty) {
+        return range;
+      }
+      const line = transaction.newDoc.lineAt(range.head);
+      const offset = getTrailingBlockIdOffset(line.text);
+      if (offset === null) {
+        return range;
+      }
+      const limit = line.from + offset;
+      if (range.head <= limit) {
+        return range;
+      }
+      clamped = true;
+      return EditorSelection.cursor(limit);
+    });
+    if (!clamped) {
+      return transaction;
+    }
+    return [
+      transaction,
+      { selection: EditorSelection.create(ranges, selection.mainIndex) },
+    ];
+  }
+
+  private getOpenMarkdownPaths(): Set<string> {
+    const paths = new Set<string>();
+    for (const leaf of this.plugin.app.workspace.getLeavesOfType("markdown")) {
+      const view = leaf.view;
+      if (view instanceof MarkdownView && view.file) {
+        paths.add(view.file.path);
+      }
+    }
+    return paths;
+  }
+
+  private sweepLeftNotes = () => {
+    const open = this.getOpenMarkdownPaths();
+    const left = [...this.openNotePaths].filter((path) => !open.has(path));
+    this.openNotePaths = new Set(
+      [...open].filter((path) =>
+        isPathInLogseqFolder(path, this.settings.logseqFolder),
+      ),
+    );
+    for (const path of left) {
+      void this.removeUnusedTrailingBullet(path).catch((error: unknown) => {
+        const detail = error instanceof Error ? error.message : String(error);
+        new Notice(`Unable to tidy ${path}: ${detail}`, 5000);
+      });
+    }
+  };
+
+  private async removeUnusedTrailingBullet(path: string): Promise<void> {
+    if (
+      !isPathInLogseqFolder(path, this.settings.logseqFolder) ||
+      this.getOpenMarkdownPaths().has(path)
+    ) {
+      return;
+    }
+    const file = this.plugin.app.vault.getAbstractFileByPath(path);
+    if (!file || !isVaultFile(file)) {
+      return;
+    }
+    await this.plugin.app.vault.process(
+      file,
+      (content) => removeTrailingEmptyBulletLines(content) ?? content,
+    );
+  }
 }

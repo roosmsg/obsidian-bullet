@@ -1,5 +1,17 @@
 # Ideas
 
+## Harden Logseq-mode synchronization
+
+Bidirectional root/child synchronization with lazy native block IDs and
+newest-edit-wins conflicts is implemented. Remaining ideas:
+
+- surface conflicts in a review UI instead of only a Notice;
+- harden the ledger against multi-device races when `data.json` itself is
+  synchronized (Obsidian Sync, Syncthing);
+- an optional setting to show sync identities on hover in Live Preview;
+- a command to disconnect a note (strip its `^id` and forget the ledger
+  entry) without deleting the file.
+
 ## Improve clickable bullets in Logseq mode
 
 Some Live Preview bullets are difficult or unreliable to click. Obsidian themes

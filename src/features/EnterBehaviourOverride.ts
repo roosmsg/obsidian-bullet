@@ -4,6 +4,7 @@ import { Prec } from "@codemirror/state";
 import { keymap } from "@codemirror/view";
 
 import { Feature } from "./Feature";
+import { stepCursorBehindSyncId } from "./LogseqMode";
 
 import { MyEditor } from "../editor";
 import { CreateNewItem } from "../operations/CreateNewItem";
@@ -68,6 +69,7 @@ export class EnterBehaviourOverride implements Feature {
   };
 
   private run = (editor: MyEditor) => {
+    stepCursorBehindSyncId(editor, this.settings.logseqFolder);
     return this.operationPerformer.perform((root) => {
       const currentList = root.getListUnderCursor();
       const orderedList = /^\d+\.$/.test(currentList.getBullet());
@@ -120,6 +122,7 @@ export class EnterBehaviourOverride implements Feature {
   };
 
   private runShiftEnter = (editor: MyEditor) => {
+    stepCursorBehindSyncId(editor, this.settings.logseqFolder);
     return this.operationPerformer.perform(
       (root) => new InsertNewLineWithoutBullet(root),
       editor,

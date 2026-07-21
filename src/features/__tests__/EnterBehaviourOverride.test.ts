@@ -15,8 +15,24 @@ jest.mock(
   "obsidian",
   () => ({
     Editor: class {},
+    MarkdownRenderChild: class MarkdownRenderChild {
+      containerEl: HTMLElement;
+
+      constructor(mockContainerEl: HTMLElement) {
+        this.containerEl = mockContainerEl;
+      }
+
+      registerDomEvent() {}
+    },
+    MarkdownView: class MarkdownView {},
+    Notice: jest.fn(),
     Plugin: class {},
     editorInfoField: {},
+    normalizePath: (path: string) =>
+      path
+        .replace(/\\/gu, "/")
+        .replace(/\/{2,}/gu, "/")
+        .replace(/^\/+|\/+$/gu, ""),
   }),
   { virtual: true },
 );
@@ -255,5 +271,67 @@ describe("EnterBehaviourOverride", () => {
     });
 
     expect(operation).toBeNull();
+  });
+
+  describe("sync identity handling", () => {
+    function makeMarkerFixture(cursorCh: number) {
+      const editor = makeEditor({
+        text: "- Task ^k3v9q2",
+        cursor: { line: 0, ch: cursorCh },
+      });
+      const setSelections = jest.fn();
+      Object.assign(editor as unknown as Record<string, unknown>, {
+        getCodeMirrorView: () => ({
+          state: {
+            field: () => ({ file: { path: "Bulletlist/Task/Task.md" } }),
+          },
+        }),
+        setSelections,
+      });
+      const settings = Object.assign(makeSettings(), {
+        overrideEnterBehaviour: true,
+        keepBodyTextInBullets: false,
+        logseqFolder: "Bulletlist",
+      });
+      const feature = new EnterBehaviourOverride(
+        {
+          addCommand: jest.fn(),
+          registerEditorExtension: jest.fn(),
+        } as unknown as Plugin,
+        settings,
+        {
+          isOpened: () => false,
+        } as ConstructorParameters<typeof EnterBehaviourOverride>[2],
+        {
+          getDefaultIndentChars: () => "  ",
+          isSmartIndentListEnabled: () => true,
+        } as ConstructorParameters<typeof EnterBehaviourOverride>[3],
+        {
+          perform: jest.fn(() => NO_OP_OUTCOME),
+        } as unknown as OperationPerformer,
+      );
+      const run = (
+        feature as unknown as { run: (currentEditor: typeof editor) => unknown }
+      ).run;
+      return { editor, run, setSelections };
+    }
+
+    test("steps the cursor behind the marker before splitting the line", () => {
+      const fixture = makeMarkerFixture(6);
+
+      fixture.run(fixture.editor);
+
+      expect(fixture.setSelections).toHaveBeenCalledWith([
+        { anchor: { ch: 14, line: 0 }, head: { ch: 14, line: 0 } },
+      ]);
+    });
+
+    test("leaves the cursor alone away from the marker boundary", () => {
+      const fixture = makeMarkerFixture(3);
+
+      fixture.run(fixture.editor);
+
+      expect(fixture.setSelections).not.toHaveBeenCalled();
+    });
   });
 });

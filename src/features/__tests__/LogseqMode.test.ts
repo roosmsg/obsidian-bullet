@@ -9,16 +9,23 @@ import {
   LogseqNoteNavigator,
   extractBulletBranch,
   getBulletNoteName,
+  getTrailingBulletInsertion,
   isPathInLogseqFolder,
   normalizeLogseqFolder,
+  removeTrailingEmptyBulletLines,
   sanitizeBulletNoteName,
+  stepCursorBehindSyncId,
 } from "../LogseqMode";
 
 jest.mock(
   "obsidian",
   () => ({
     MarkdownRenderChild: class MarkdownRenderChild {
-      constructor(public containerEl: HTMLElement) {}
+      containerEl: HTMLElement;
+
+      constructor(mockContainerEl: HTMLElement) {
+        this.containerEl = mockContainerEl;
+      }
 
       registerDomEvent() {}
     },
@@ -48,11 +55,14 @@ function makeEditor(lines: string[]) {
 }
 
 function makeParser(endLine: number, startLine = 0) {
+  const rootList = { getParent: () => null };
+  const pageList = { getParent: () => rootList };
   return {
     parse: jest.fn(() => ({
       getListUnderLine: () => ({
         getFirstLineContentStart: () => ({ line: startLine, ch: 2 }),
         getContentEndIncludingChildren: () => ({ line: endLine, ch: 0 }),
+        getParent: () => pageList,
       }),
     })),
   };
@@ -154,6 +164,19 @@ describe("extractBulletBranch", () => {
     });
   });
 
+  test("strips legacy markers but keeps sync identities in note content", () => {
+    const editor = makeEditor([
+      "  - Task Beta %%bullet-sync:task-beta%%",
+      "    - Child 1 ^child1",
+    ]);
+    const parser = makeParser(1);
+
+    expect(extractBulletBranch(parser as never, editor as never, 0)).toEqual({
+      name: "Task Beta",
+      content: "- Task Beta\n  - Child 1 ^child1\n",
+    });
+  });
+
   test("rejects empty and non-list lines", () => {
     const parser = makeParser(0);
 
@@ -167,6 +190,131 @@ describe("extractBulletBranch", () => {
         0,
       ),
     ).toBeNull();
+  });
+});
+
+describe("getTrailingBulletInsertion", () => {
+  test("inserts an indented child bullet under the last non-empty bullet", () => {
+    expect(getTrailingBulletInsertion(["- Note ^id", ""], "  ")).toEqual({
+      cursor: { ch: 4, line: 1 },
+      insertAt: { ch: 10, line: 0 },
+      text: "\n  - ",
+    });
+  });
+
+  test("nests below the deepest last bullet with its own indentation", () => {
+    expect(
+      getTrailingBulletInsertion(["- N ^id", "\t- a", "\t- b", ""], "\t"),
+    ).toEqual({
+      cursor: { ch: 4, line: 3 },
+      insertAt: { ch: 4, line: 2 },
+      text: "\n\t\t- ",
+    });
+  });
+
+  test("inserts after trailing continuation text and reuses the marker", () => {
+    expect(
+      getTrailingBulletInsertion(["* Note", "  detail text", ""], "  "),
+    ).toEqual({
+      cursor: { ch: 4, line: 2 },
+      insertAt: { ch: 13, line: 1 },
+      text: "\n  * ",
+    });
+  });
+
+  test("reuses an existing trailing empty bullet", () => {
+    expect(
+      getTrailingBulletInsertion(["- Note ^id", "  - ", ""], "  "),
+    ).toEqual({
+      cursor: { ch: 4, line: 1 },
+    });
+  });
+
+  test("returns null for documents without bullets", () => {
+    expect(getTrailingBulletInsertion(["plain text", ""], "  ")).toBeNull();
+    expect(getTrailingBulletInsertion([""], "  ")).toBeNull();
+  });
+});
+
+describe("removeTrailingEmptyBulletLines", () => {
+  test("removes a still-empty trailing bullet", () => {
+    expect(removeTrailingEmptyBulletLines("- Note ^id\n  - \n")).toBe(
+      "- Note ^id\n",
+    );
+  });
+
+  test("removes stacked empty bullets and blank lines around them", () => {
+    expect(
+      removeTrailingEmptyBulletLines("- Note\n  - kept\n  - \n\n  - \n"),
+    ).toBe("- Note\n  - kept\n");
+  });
+
+  test("preserves CRLF line endings", () => {
+    expect(removeTrailingEmptyBulletLines("- Note\r\n\t- \r\n")).toBe(
+      "- Note\r\n",
+    );
+  });
+
+  test("returns null when there is nothing to remove", () => {
+    expect(removeTrailingEmptyBulletLines("- Note\n  - kept\n")).toBeNull();
+    expect(removeTrailingEmptyBulletLines("- Note\n\n")).toBeNull();
+    expect(removeTrailingEmptyBulletLines("- \n")).toBeNull();
+  });
+
+  test("never removes an empty bullet that has content after it", () => {
+    expect(
+      removeTrailingEmptyBulletLines("- Note\n  - \n    - child\n"),
+    ).toBeNull();
+  });
+});
+
+describe("stepCursorBehindSyncId", () => {
+  function makeHopEditor(lineText: string, ch: number) {
+    const cursor = { ch, line: 0 };
+    const setSelections = jest.fn();
+    const editor = {
+      getCodeMirrorView: () => ({ state: {} }),
+      getCursor: () => cursor,
+      getLine: () => lineText,
+      listSelections: () => [{ anchor: cursor, head: cursor }],
+      setSelections,
+    };
+    return { editor: editor as never, setSelections };
+  }
+
+  test("hops over the marker when the cursor sits at the content end", () => {
+    mockedGetFileFromState.mockReturnValue({
+      path: "Bulletlist/Task/Task.md",
+    } as never);
+    const { editor, setSelections } = makeHopEditor("- Task ^abc123", 6);
+
+    stepCursorBehindSyncId(editor, "Bulletlist");
+
+    expect(setSelections).toHaveBeenCalledWith([
+      { anchor: { ch: 14, line: 0 }, head: { ch: 14, line: 0 } },
+    ]);
+  });
+
+  test("stays put away from the boundary, without a marker, or outside the folder", () => {
+    mockedGetFileFromState.mockReturnValue({
+      path: "Bulletlist/Task/Task.md",
+    } as never);
+    const midContent = makeHopEditor("- Task ^abc123", 3);
+    stepCursorBehindSyncId(midContent.editor, "Bulletlist");
+    expect(midContent.setSelections).not.toHaveBeenCalled();
+
+    const noMarker = makeHopEditor("- Task", 6);
+    stepCursorBehindSyncId(noMarker.editor, "Bulletlist");
+    expect(noMarker.setSelections).not.toHaveBeenCalled();
+
+    mockedGetFileFromState.mockReturnValue({ path: "Other/Task.md" } as never);
+    const outside = makeHopEditor("- Task ^abc123", 6);
+    stepCursorBehindSyncId(outside.editor, "Bulletlist");
+    expect(outside.setSelections).not.toHaveBeenCalled();
+
+    const disabled = makeHopEditor("- Task ^abc123", 6);
+    stepCursorBehindSyncId(disabled.editor, "");
+    expect(disabled.setSelections).not.toHaveBeenCalled();
   });
 });
 
@@ -297,7 +445,7 @@ describe("LogseqModePluginValue", () => {
     const lineElement = {};
     const bullet: { closest: jest.Mock<unknown, [string]> } = {
       closest: jest.fn((selector: string): unknown => {
-        if (selector === ".list-bullet") {
+        if (selector.includes(".list-bullet")) {
           return bullet;
         }
         if (selector === ".cm-line") {
@@ -372,7 +520,7 @@ describe("LogseqModePluginValue", () => {
       ctrlKey: false,
       metaKey: false,
       preventDefault: jest.fn(),
-      shiftKey: false,
+      shiftKey: true,
       stopImmediatePropagation: jest.fn(),
       stopPropagation: jest.fn(),
       target: bullet,

@@ -158,6 +158,32 @@ test("loads and saves the configured Logseq folder", async () => {
   );
 });
 
+test("preserves the private Logseq sync ledger without exposing it as a setting", async () => {
+  const ledger = { folder: "Bulletlist", version: 1 };
+  const saveData = jest.fn(async () => undefined);
+  const settings = new Settings({
+    loadData: jest.fn(async () => ({
+      logseqFolder: "Bulletlist",
+      logseqSyncState: ledger,
+    })),
+    saveData,
+  });
+
+  await settings.load();
+  expect(settings.getLogseqSyncState()).toEqual(ledger);
+  expect(settings.getValues()).not.toHaveProperty("logseqSyncState");
+
+  const nextLedger = { folder: "Bulletlist", version: 1, rootPath: "root.md" };
+  await settings.saveLogseqSyncState(nextLedger);
+
+  expect(saveData).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      logseqFolder: "Bulletlist",
+      logseqSyncState: nextLedger,
+    }),
+  );
+});
+
 describe("change notifications", () => {
   function createSettings() {
     return new Settings({

@@ -168,6 +168,7 @@ export default class ObsidianBulletPlugin extends Plugin {
         this.settings,
         this.parser,
         listMarkerInteractionGuard,
+        this.obsidianSettings,
       ),
 
       // features based on settings.dragAndDrop
