@@ -480,10 +480,16 @@ Replace the existing dot dimensions with 7px and add stacking support:
   width: 7px;
   height: 7px;
   background-color: var(--text-muted);
+}
+
+body:not(.is-mobile).bullet-plugin-better-lists
+  .markdown-source-view.mod-cm6.is-live-preview
+  .cm-line.HyperMD-list-line:has(.cm-fold-indicator)
+  .list-bullet::after {
   transition: none;
 }
 
-body.bullet-plugin-better-lists
+body:not(.is-mobile).bullet-plugin-better-lists
   .markdown-source-view.mod-cm6.is-live-preview
   .cm-line.HyperMD-list-line
   .is-collapsed
