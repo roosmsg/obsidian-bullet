@@ -20,16 +20,21 @@
 
 ---
 
-### Task 1: Desktop native click の回帰 test
+### Task 1: Desktop native fold scroll feature
 
 **Files:**
 
+- Create: `src/features/NativeFoldScroll.ts`
+- Create: `src/features/__tests__/NativeFoldScroll.test.ts`
+- Modify: `src/features/MobileRightFoldControls.ts`
 - Modify: `src/features/__tests__/MobileRightFoldControls.test.ts`
+- Modify: `src/ObsidianBulletPlugin.ts`
+- Modify: `src/__tests__/ObsidianBulletPlugin.test.ts`
 
 **Interfaces:**
 
-- Consumes: `MobileRightFoldControlsPluginValue` の capture listener と `MobileNativeFoldScroll.prepare(view)`。
-- Produces: desktop document の list と heading が scroll reserve と snapshot 準備を通る failing contract。
+- Consumes: `ensureFoldScrollReserve(view)` と `stableFoldScrollSnapshot(view)` from `src/features/FoldScroll.ts`。
+- Produces: `NativeFoldScroll implements Feature`、`NativeFoldScrollState.extension`、`NativeFoldScrollPluginValue` と、その RED から GREEN までの regression test。
 
 - [ ] **Step 1: desktop document を表現できる test helper を追加する**
 
@@ -60,31 +65,13 @@ SKIP_OBSIDIAN=1 n exec 22.23.1 npx jest src/features/__tests__/MobileRightFoldCo
 
 Expected: desktop case が `paddingBottom` と `prepare` の未実行で FAIL する。
 
----
-
-### Task 2: Native fold scroll feature の分離
-
-**Files:**
-
-- Create: `src/features/NativeFoldScroll.ts`
-- Create: `src/features/__tests__/NativeFoldScroll.test.ts`
-- Modify: `src/features/MobileRightFoldControls.ts`
-- Modify: `src/features/__tests__/MobileRightFoldControls.test.ts`
-- Modify: `src/ObsidianBulletPlugin.ts`
-- Modify: `src/__tests__/ObsidianBulletPlugin.test.ts`
-
-**Interfaces:**
-
-- Consumes: `ensureFoldScrollReserve(view)` と `stableFoldScrollSnapshot(view)` from `src/features/FoldScroll.ts`。
-- Produces: `NativeFoldScroll implements Feature`、`NativeFoldScrollState.extension`、`NativeFoldScrollPluginValue`。
-
-- [ ] **Step 1: transaction state を移す**
+- [ ] **Step 4: transaction state を移す**
 
 `MobileNativeFoldScroll` の pending object、`WeakMap<EditorState, PendingFoldScrollSnapshot>`、transaction extender、`prepare()`、timeout expiry を `NativeFoldScrollState` へ名前を変えて移す。
 
 fold effect、unfold effect、folded range の実内容変更という消費条件は変えない。
 
-- [ ] **Step 2: desktop と mobile の activation rule を実装する**
+- [ ] **Step 5: desktop と mobile の activation rule を実装する**
 
 `NativeFoldScrollPluginValue` は `contentDOM` の capture phase に `pointerdown` と `click` を登録する。
 
@@ -103,25 +90,25 @@ function isNativeFoldScrollEnabled(document: Document): boolean {
 
 対象 selector は list と heading の native `.collapse-indicator` だけに限定する。
 
-- [ ] **Step 3: mobile feature を body class 管理へ戻す**
+- [ ] **Step 6: mobile feature を body class 管理へ戻す**
 
 `MobileRightFoldControls.ts` から CodeMirror extension、ViewPlugin、pointer listener、transaction state を削除する。
 
 `MobileRightFoldControls.load()` は setting callback と `DocumentBodyClass` だけを管理する。
 
-- [ ] **Step 4: generic test を専用 file へ移す**
+- [ ] **Step 7: generic test を専用 file へ移す**
 
 desktop list、desktop heading、mobile setting 有効、mobile setting 無効、対象外 element、fold、unfold、中間 selection、implicit unfold、timeout expiry、古い timeout の全 case を `NativeFoldScroll.test.ts` に置く。
 
 test は mock の呼び出し自体ではなく、native fold transaction に snapshot effect が含まれる結果を確認する。
 
-- [ ] **Step 5: plugin へ feature を登録する**
+- [ ] **Step 8: plugin へ feature を登録する**
 
 `ObsidianBulletPlugin.ts` で `new NativeFoldScroll(this)` を `MobileRightFoldControls` の直後に登録する。
 
 plugin lifecycle test は feature の load と unload が既存 feature と同じ順序で実行されることを確認する。
 
-- [ ] **Step 6: GREEN を確認する**
+- [ ] **Step 9: GREEN を確認する**
 
 Run:
 
@@ -135,9 +122,26 @@ SKIP_OBSIDIAN=1 n exec 22.23.1 npx jest \
 
 Expected: 対象 suite がすべて PASS する。
 
+- [ ] **Step 10: Task 1 を commit する**
+
+`but diff` が返した source と test の change ID だけを使い、`codex/roam-scroll-anchor` へ次の message で commit する。
+
+```text
+fix(editor): stabilize desktop native fold scrolling
+
+Why:
+- CodeMirror disables browser scroll anchoring and desktop native chevrons did not attach the plugin's corrected viewport snapshot.
+- Fold and unfold could therefore move the visible Y position under runtime-dependent anchor selection.
+
+What:
+- Apply the native fold scroll transaction contract to desktop list and heading chevrons.
+- Separate cross-platform scroll preservation from mobile control styling.
+- Cover desktop, mobile, selection, and timeout behavior with regression tests.
+```
+
 ---
 
-### Task 3: Durable instruction と local verification
+### Task 2: Durable instruction と local verification
 
 **Files:**
 
@@ -201,9 +205,24 @@ git diff --check
 
 Expected: 全 test suite が PASS し、production build と diff check が exit 0。
 
+- [ ] **Step 6: Task 2 を commit する**
+
+`but diff` が返した `AGENTS.md` と verification evidence を追記した spec と plan の change ID だけを使い、`codex/roam-scroll-anchor` へ次の message で commit する。
+
+```text
+docs(editor): record native fold scroll safeguards
+
+Why:
+- Desktop and mobile native controls now share transaction timing constraints that future UI changes must preserve.
+
+What:
+- Document the desktop activation rule and same-transaction snapshot invariant.
+- Record the completed automated and real-Obsidian verification evidence.
+```
+
 ---
 
-### Task 4: GitButler commit と review
+### Task 3: GitButler review
 
 **Files:**
 
@@ -212,7 +231,7 @@ Expected: 全 test suite が PASS し、production build と diff check が exit
 **Interfaces:**
 
 - Consumes: 全 verification evidence と actual diff。
-- Produces: `codex/roam-scroll-anchor` 上の Conventional Commit と review 済み changeset。
+- Produces: `codex/roam-scroll-anchor` 上の review 済み changeset。
 
 - [ ] **Step 1: diff を review する**
 
@@ -220,26 +239,8 @@ Expected: 全 test suite が PASS し、production build と diff check が exit
 
 Critical または Important な review 指摘は commit 前に修正し、該当 verification を再実行する。
 
-- [ ] **Step 2: commit する**
-
-`but diff` が返した change ID だけを使う。
-
-```text
-fix(editor): stabilize desktop native fold scrolling
-
-Why:
-- CodeMirror disables browser scroll anchoring and desktop native chevrons did not attach the plugin's corrected viewport snapshot.
-- Fold and unfold could therefore move the visible Y position under runtime-dependent anchor selection.
-
-What:
-- Apply the native fold scroll transaction contract to desktop list and heading chevrons.
-- Separate cross-platform scroll preservation from mobile control styling.
-- Cover desktop, mobile, selection, and timeout behavior with regression tests.
-```
-
-- [ ] **Step 3: committed state を確認する**
+- [ ] **Step 2: committed state を確認する**
 
 `but status` の返値で branch、commit、残っている uncommitted changes を確認する。
 
 Expected: temporary fixture がなく、task の tracked changes が `codex/roam-scroll-anchor` にだけ入る。
-
