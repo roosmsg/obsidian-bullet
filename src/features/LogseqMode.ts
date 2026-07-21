@@ -319,8 +319,15 @@ async function openLogseqFile(leaf: WorkspaceLeaf, file: TFile): Promise<void> {
   }
 
   const editor = view.editor;
-  if (editor.getCursor().line === 0 && editor.lineCount() > 1) {
-    editor.setCursor({ line: 1, ch: 0 });
+  if (editor.getCursor().line !== 0) {
+    return;
+  }
+
+  for (let line = 1; line < editor.lineCount(); line++) {
+    if (editor.getLine(line).trim() === "") {
+      editor.setCursor({ line, ch: 0 });
+      return;
+    }
   }
 }
 
